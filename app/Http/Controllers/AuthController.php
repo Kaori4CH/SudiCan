@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class sudican extends Controller
+class AuthController extends Controller
 {
     /**
      * Display a listing of the resource.
