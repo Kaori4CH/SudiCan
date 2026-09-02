@@ -25,6 +25,11 @@ Route::name('students.')->prefix('students')->group(function () {
     Route::delete('/{id}', [StudentController::class, 'destroy'])->name('destroy');
 }); 
 
+Route::get('/student/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
+Route::get('/student/cash-report', [StudentController::class, 'cashReport'])->name('student.cash-report');
+Route::get('/student/waste-deposit', [StudentController::class, 'wasteDeposit'])->name('student.deposit');
+Route::get('/student/cash-withdrawal', [StudentController::class, 'cashWithdrawal'])->name('student.cash-withdrawal');
+
 Route::name('teachers.')->prefix('teachers')->group(function () {
 
     Route::get('/', [TeacherController::class, 'index'])->name('index');
