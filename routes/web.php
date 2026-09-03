@@ -34,6 +34,16 @@ Route::name('teachers.')->prefix('teachers')->group(function () {
 
     Route::get('/', [TeacherController::class, 'index'])->name('index');
 
+    Route::get('/waste-deposit', [TeacherController::class, 'wasteDeposit'])->name('waste-deposit');
+
+    Route::post('/waste-deposit', [TeacherController::class, 'storeWasteDeposit'])->name('waste-deposit.store');
+
+    Route::get('/cash-report', [TeacherController::class, 'cashReport'])->name('cash-report');
+
+    Route::put('/cash-report/{id}/approve', [TeacherController::class, 'approveWithdrawal'])->name('cash-report.approve');
+
+    Route::delete('/cash-report/{id}/reject', [TeacherController::class, 'rejectWithdrawal'])->name('cash-report.reject');
+
     Route::get('/{id}', [TeacherController::class, 'show'])->name('show')->whereNumber('id');
 
     Route::get('/create', [TeacherController::class, 'create'])->name('create');
