@@ -5,7 +5,7 @@
 @section('content')
 
     @php
-        $formatRp = fn($v) => 'Rp ' . number_format($v, 0, ',', '.');
+        $formatCurrency = fn($v) => 'Rp ' . number_format($v, 0, ',', '.');
     @endphp
 
     <h1 class="text-2xl font-bold">Cash Report - Kelas {{ $className }}</h1>
@@ -18,7 +18,7 @@
             </div>
             <div>
                 <p class="text-xs text-gray-400 uppercase tracking-wide">Total Pendapatan</p>
-                <p class="text-2xl font-bold mt-1">{{ $formatRp($totalPendapatan) }}</p>
+                <p class="text-2xl font-bold mt-1">{{ $formatCurrency($totalIncome) }}</p>
                 <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
                     <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 12% minggu ini
                 </p>
@@ -31,7 +31,7 @@
             </div>
             <div>
                 <p class="text-xs text-gray-400 uppercase tracking-wide">Total Penarikan</p>
-                <p class="text-2xl font-bold mt-1">{{ $formatRp($totalPenarikan) }}</p>
+                <p class="text-2xl font-bold mt-1">{{ $formatCurrency($totalWithdrawal) }}</p>
                 <p class="text-xs text-red-500 mt-1 flex items-center gap-1">
                     <img src="{{ asset('images/redtriangle.png') }}" alt="" class="w-2.5 h-2.5"> 8% minggu ini
                 </p>
@@ -44,7 +44,7 @@
             </div>
             <div>
                 <p class="text-xs text-gray-400 uppercase tracking-wide">Saldo Tersedia</p>
-                <p class="text-2xl font-bold mt-1">{{ $formatRp($saldoTersedia) }}</p>
+                <p class="text-2xl font-bold mt-1">{{ $formatCurrency($availableBalance) }}</p>
                 <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
                     <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 15% dari minggu lalu
                 </p>
@@ -89,9 +89,9 @@
                         <td class="px-5 py-3">{{ $t['date'] }}</td>
                         <td class="px-5 py-3 font-medium">{{ $t['type'] }}</td>
                         <td class="px-5 py-3 text-gray-500">{{ $t['source'] }}</td>
-                        <td class="px-5 py-3 text-right">{{ $t['deposit'] ? $formatRp($t['deposit']) : '-' }}</td>
-                        <td class="px-5 py-3 text-right">{{ $t['withdrawal'] ? $formatRp($t['withdrawal']) : '-' }}</td>
-                        <td class="px-5 py-3 text-right font-medium">{{ $formatRp($t['balance']) }}</td>
+                        <td class="px-5 py-3 text-right">{{ $t['deposit'] ? $formatCurrency($t['deposit']) : '-' }}</td>
+                        <td class="px-5 py-3 text-right">{{ $t['withdrawal'] ? $formatCurrency($t['withdrawal']) : '-' }}</td>
+                        <td class="px-5 py-3 text-right font-medium">{{ $formatCurrency($t['balance']) }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="px-5 py-6 text-center text-gray-400">Belum ada transaksi</td></tr>

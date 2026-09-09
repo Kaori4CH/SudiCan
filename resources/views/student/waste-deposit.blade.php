@@ -5,7 +5,7 @@
 @section('content')
 
     @php
-        $formatRp = fn($v) => 'Rp ' . number_format($v, 0, ',', '.');
+        $formatCurrency = fn($v) => 'Rp ' . number_format($v, 0, ',', '.');
     @endphp
 
     <h1 class="text-2xl font-bold">Waste Deposit</h1>
@@ -18,7 +18,7 @@
             </div>
             <div>
                 <p class="text-xs text-gray-400 uppercase tracking-wide">Total Sampah Terkumpul</p>
-                <p class="text-2xl font-bold mt-1">{{ $totalSampah }} kg</p>
+                <p class="text-2xl font-bold mt-1">{{ $totalWaste }} kg</p>
                 <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
                     <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 12% minggu ini
                 </p>
@@ -83,7 +83,7 @@
                         <td class="px-5 py-3 font-medium">{{ $d['class'] }}</td>
                         <td class="px-5 py-3 text-gray-500">{{ $d['type'] }}</td>
                         <td class="px-5 py-3 text-right">{{ $d['weight'] }} kg</td>
-                        <td class="px-5 py-3 text-right">{{ $formatRp($d['value']) }}</td>
+                        <td class="px-5 py-3 text-right">{{ $formatCurrency($d['value']) }}</td>
                         <td class="px-5 py-3 text-right text-gray-500">{{ $d['validator'] }}</td>
                     </tr>
                 @empty

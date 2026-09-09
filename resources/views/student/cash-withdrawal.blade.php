@@ -5,7 +5,7 @@
 @section('content')
 
     @php
-        $formatRp = fn($v) => 'Rp ' . number_format($v, 0, ',', '.');
+        $formatCurrency = fn($v) => 'Rp ' . number_format($v, 0, ',', '.');
     @endphp
 
     <a href="{{ route('student.cash-report') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 mb-4">
@@ -22,8 +22,8 @@
             </div>
             <div>
                 <p class="text-xs text-gray-400">Saldo Tersedia</p>
-                <p class="text-2xl font-bold mt-1">{{ $formatRp($saldoTersedia) }}</p>
-                <p class="text-xs text-gray-400 mt-1">Per {{ $saldoDate }}</p>
+                <p class="text-2xl font-bold mt-1">{{ $formatCurrency($availableBalance) }}</p>
+                <p class="text-xs text-gray-400 mt-1">Per {{ $balanceDate }}</p>
             </div>
         </div>
 

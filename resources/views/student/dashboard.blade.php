@@ -21,14 +21,14 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-xl p-5 shadow-sm">
             <p class="text-xs text-gray-400 uppercase tracking-wide">Total Sampah Terkumpul</p>
-            <p class="text-2xl font-bold mt-1">{{ number_format($totalSampah, 0, ',', '.') }} kg</p>
+            <p class="text-2xl font-bold mt-1">{{ number_format($totalWaste, 0, ',', '.') }} kg</p>
             <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 12% minggu ini
             </p>
         </div>
         <div class="bg-white rounded-xl p-5 shadow-sm">
             <p class="text-xs text-gray-400 uppercase tracking-wide">Total Kas Terkumpul</p>
-            <p class="text-2xl font-bold mt-1">Rp {{ number_format($totalKas, 0, ',', '.') }}</p>
+            <p class="text-2xl font-bold mt-1">Rp {{ number_format($totalCash, 0, ',', '.') }}</p>
             <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 12% minggu ini
             </p>

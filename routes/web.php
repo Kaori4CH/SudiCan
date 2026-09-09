@@ -8,22 +8,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::name('students.')->prefix('students')->group(function () {
-
-    Route::get('/', [StudentController::class, 'index'])->name('index');
-
-    Route::get('/{id}', [StudentController::class, 'show'])->name('show')->whereNumber('id');
-
-    Route::get('/create', [StudentController::class, 'create'])->name('create');
-
-    Route::get('/{id}/edit', [StudentController::class, 'edit'])->name('edit');
-
-    Route::post('/', [StudentController::class, 'store'])->name('store');
-
-    Route::put('/{id}', [StudentController::class, 'update'])->name('update');
-
-    Route::delete('/{id}', [StudentController::class, 'destroy'])->name('destroy');
-}); 
+Route::redirect('/login', '/auth/login');
+Route::redirect('/register', '/auth/register');
 
 Route::get('/student/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
 Route::get('/student/cash-report', [StudentController::class, 'cashReport'])->name('student.cash-report');

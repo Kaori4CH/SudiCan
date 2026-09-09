@@ -12,8 +12,8 @@ class StudentController extends Controller
     public function dashboard()
     {
         return view('student.dashboard', [
-            'totalSampah' => 0,
-            'totalKas' => 0,
+            'totalWaste' => 0,
+            'totalCash' => 0,
             'rankings' => [],
             'recentDeposits' => []
         ]);
@@ -23,9 +23,9 @@ class StudentController extends Controller
     {
         return view('student.cash-report', [
             'className' => 'XII TKJ 1',
-            'totalPendapatan' => 3175100,
-            'totalPenarikan' => 1250000,
-            'saldoTersedia' => 1925100,
+            'totalIncome' => 3175100,
+            'totalWithdrawal' => 1250000,
+            'availableBalance' => 1925100,
             'transactions' => [
                 ['date' => '18 Agu 2026', 'type' => 'Deposit', 'source' => 'Penyetoran Botol Plastik', 'deposit' => 15600, 'withdrawal' => null, 'balance' => 1925100],
                 ['date' => '17 Agu 2026', 'type' => 'Deposit', 'source' => 'Penyetoran Kertas Karton', 'deposit' => 24000, 'withdrawal' => null, 'balance' => 1909500],
@@ -39,7 +39,7 @@ class StudentController extends Controller
     public function wasteDeposit()
     {
         return view('student.waste-deposit', [
-            'totalSampah' => 328,
+            'totalWaste' => 328,
             'activeClass' => 'XII TKJ 1',
             'topWasteType' => 'Botol Plastik',
             'deposits' => [
@@ -57,61 +57,9 @@ class StudentController extends Controller
     public function cashWithdrawal()
     {
         return view('student.cash-withdrawal', [
-            'saldoTersedia' => 1925100,
-            'saldoDate' => '18 Agustus 2026',
+            'availableBalance' => 1925100,
+            'balanceDate' => '18 Agustus 2026',
         ]);
     }
 
-    public function index()
-    {
-
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
 }
