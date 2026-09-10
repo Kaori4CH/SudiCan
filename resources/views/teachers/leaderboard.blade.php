@@ -1,4 +1,4 @@
-@extends('Layouts.app-admin')
+@extends('layouts.app-admin')
 
 @section('title', $title)
 

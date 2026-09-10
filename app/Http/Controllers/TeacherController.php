@@ -47,7 +47,7 @@ class TeacherController extends Controller
             ['date' => '16 Agu 2026', 'class' => 'Kelas 9C', 'type' => 'Setoran', 'detail' => 'Botol Plastik · 4 kg', 'amount' => '+Rp12.000', 'positive' => true],
         ];
 
-        return view('Teachers.index', [
+        return view('teachers.index', [
             'title' => $title,
             'today' => $today,
             'stats' => $stats,
@@ -80,7 +80,7 @@ class TeacherController extends Controller
             ['date' => '10 Agu 2026', 'type' => 'Kertas/Karton', 'weight' => '8.0 kg', 'amount' => '+Rp16.000'],
         ];
 
-        return view('Teachers.show', [
+        return view('teachers.show', [
             'title' => $title,
             'class' => $class,
             'history' => $history,
@@ -95,7 +95,7 @@ class TeacherController extends Controller
     {
         $title = 'SudiCan - Tambah Kelas';
 
-        return view('Teachers.create', [
+        return view('teachers.create', [
             'title' => $title,
         ]);
     }
@@ -144,7 +144,7 @@ class TeacherController extends Controller
             ['time' => '15 Agu · 09:50', 'class' => 'XI TKJ 1', 'type' => 'Minyak Jelantah', 'weight' => '2.0 kg', 'amount' => '+Rp10.000', 'points' => 33],
         ];
 
-        return view('Teachers.waste-deposit', [
+        return view('teachers.waste-deposit', [
             'title' => $title,
             'classes' => $classes,
             'wasteTypes' => $wasteTypes,
@@ -189,7 +189,7 @@ class TeacherController extends Controller
             ['label' => 'Menunggu Validasi', 'value' => '2', 'note' => 'pengajuan perlu diproses', 'warn' => true],
         ];
 
-        return view('Teachers.cash-report', [
+        return view('teachers.cash-report', [
             'title' => $title,
             'stats' => $stats,
             'pending' => $this->dummyPendingWithdrawals(),
@@ -233,7 +233,7 @@ class TeacherController extends Controller
             'members' => 32,
         ];
 
-        return view('Teachers.edit', [
+        return view('teachers.edit', [
             'title' => $title,
             'class' => $class,
         ]);
@@ -265,6 +265,124 @@ class TeacherController extends Controller
         // NOTE: penghapusan dari database belum diimplementasikan (masih data dummy).
 
         return redirect()->route('teachers.index')->with('success', "Kelas #{$id} berhasil dihapus.");
+    }
+
+    /**
+     * GET /teachers/waste-prices -> name('teachers.waste-prices.index')
+     * Manajemen Harga Sampah — daftar jenis sampah & harga per kg.
+     */
+    public function wastePrices()
+    {
+        $title = 'SudiCan - Manajemen Harga Sampah';
+
+        return view('teachers.waste-prices', [
+            'title' => $title,
+            'prices' => $this->dummyWastePrices(),
+        ]);
+    }
+
+    /**
+     * GET /teachers/waste-prices/create -> name('teachers.waste-prices.create')
+     * Form tambah jenis sampah baru.
+     */
+    public function wastePricesCreate()
+    {
+        $title = 'SudiCan - Tambah Jenis Sampah';
+
+        return view('teachers.waste-price-form', [
+            'title' => $title,
+            'formAction' => route('teachers.waste-prices.store'),
+            'method' => 'POST',
+            'item' => null,
+        ]);
+    }
+
+    /**
+     * POST /teachers/waste-prices -> name('teachers.waste-prices.store')
+     * Simpan jenis sampah baru.
+     */
+    public function wastePricesStore(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:100',
+            'unit' => 'required|string|max:20',
+            'price' => 'required|numeric|min:0',
+        ]);
+
+        // NOTE: penyimpanan ke database belum diimplementasikan (masih data dummy).
+
+        return redirect()->route('teachers.waste-prices.index')->with('success', 'Jenis sampah baru berhasil ditambahkan.');
+    }
+
+    /**
+     * GET /teachers/waste-prices/{id}/edit -> name('teachers.waste-prices.edit')
+     * Form edit harga jenis sampah.
+     */
+    public function wastePricesEdit(string $id)
+    {
+        $title = 'SudiCan - Edit Jenis Sampah';
+
+        $item = collect($this->dummyWastePrices())->firstWhere('id', (int) $id)
+            ?? $this->dummyWastePrices()[0];
+
+        return view('teachers.waste-price-form', [
+            'title' => $title,
+            'formAction' => route('teachers.waste-prices.update', $item['id']),
+            'method' => 'PUT',
+            'item' => $item,
+        ]);
+    }
+
+    /**
+     * PUT /teachers/waste-prices/{id} -> name('teachers.waste-prices.update')
+     * Simpan perubahan harga jenis sampah.
+     */
+    public function wastePricesUpdate(Request $request, string $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:100',
+            'unit' => 'required|string|max:20',
+            'price' => 'required|numeric|min:0',
+        ]);
+
+        // NOTE: penyimpanan ke database belum diimplementasikan (masih data dummy).
+
+        return redirect()->route('teachers.waste-prices.index')->with('success', 'Harga jenis sampah berhasil diperbarui.');
+    }
+
+    /**
+     * DELETE /teachers/waste-prices/{id} -> name('teachers.waste-prices.destroy')
+     * Hapus jenis sampah.
+     */
+    public function wastePricesDestroy(string $id)
+    {
+        // NOTE: penghapusan dari database belum diimplementasikan (masih data dummy).
+
+        return redirect()->route('teachers.waste-prices.index')->with('success', 'Jenis sampah berhasil dihapus.');
+    }
+
+    /**
+     * GET /teachers/accounts -> name('teachers.accounts')
+     * Manajemen Akun — placeholder, spesifikasi belum diberikan.
+     */
+    public function accounts()
+    {
+        return view('teachers.accounts', [
+            'title' => 'SudiCan - Manajemen Akun',
+        ]);
+    }
+
+    private function dummyWastePrices(): array
+    {
+        return [
+            ['id' => 1, 'updatedAt' => '14 April 2026', 'name' => 'Botol Plastik', 'unit' => 'kg', 'price' => 8500],
+            ['id' => 2, 'updatedAt' => '10 Agu 2026', 'name' => 'Kertas Karton', 'unit' => 'kg', 'price' => 7000],
+            ['id' => 3, 'updatedAt' => '21 Mei 2026', 'name' => 'Kaleng Logam', 'unit' => 'kg', 'price' => 12000],
+            ['id' => 4, 'updatedAt' => '12 Jan 2026', 'name' => 'Kardus', 'unit' => 'kg', 'price' => 10000],
+            ['id' => 5, 'updatedAt' => '5 Feb 2026', 'name' => 'Kantong Plastik', 'unit' => 'kg', 'price' => 6500],
+            ['id' => 6, 'updatedAt' => '2 Agu 2026', 'name' => 'Bekas Logam', 'unit' => 'kg', 'price' => 15000],
+            ['id' => 7, 'updatedAt' => '13 Juli 2026', 'name' => 'Tisu', 'unit' => 'kg', 'price' => 6000],
+        ];
     }
 
     private function dummyPendingWithdrawals(): array

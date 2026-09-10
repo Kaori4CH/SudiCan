@@ -1,4 +1,4 @@
-@extends(('Layouts.app-admin'))
+@extends('layouts.app-admin')
 
 @section('title', $title)
 
@@ -83,7 +83,6 @@
             </div>
 
             <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">
-                <x-nav-icon name="check" class="h-4 w-4" />
                 Simpan Setoran
             </button>
         </form>

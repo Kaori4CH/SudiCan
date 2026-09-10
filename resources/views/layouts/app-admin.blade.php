@@ -12,7 +12,7 @@
 
     <div class="flex min-h-screen">
 
-        @include('Layouts.Partial.sidebar-admin')
+        @include('layouts.Partial.sidebar-admin')
 
         <main class="flex-1 px-10 py-8">
             @yield('content')

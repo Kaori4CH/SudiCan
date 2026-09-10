@@ -1,4 +1,4 @@
-@extends(('Layouts.app-admin'))
+@extends('layouts.app-admin')
 
 @section('title', $title)
 
@@ -6,7 +6,7 @@
 
     <div class="mb-6">
         <a href="{{ route('teachers.index') }}" class="mb-2 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700">
-            &larr; Kembali ke Dashboard
+            <img src="{{ asset('images/kembali.png') }}" alt="" class="h-3.5 w-3.5"> Kembali ke Dashboard
         </a>
         <h1 class="text-2xl font-bold text-slate-800">Tambah Kelas</h1>
         <p class="mt-1 text-sm text-slate-500">Daftarkan kelas baru ke dalam sistem SudiCan</p>
@@ -49,7 +49,6 @@
                     Batal
                 </a>
                 <button type="submit" class="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">
-                    <x-nav-icon name="check" class="h-4 w-4" />
                     Simpan Kelas
                 </button>
             </div>

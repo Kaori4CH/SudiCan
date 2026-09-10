@@ -30,6 +30,20 @@ Route::name('teachers.')->prefix('teachers')->group(function () {
 
     Route::delete('/cash-report/{id}/reject', [TeacherController::class, 'rejectWithdrawal'])->name('cash-report.reject');
 
+    Route::get('/waste-prices', [TeacherController::class, 'wastePrices'])->name('waste-prices.index');
+
+    Route::get('/waste-prices/create', [TeacherController::class, 'wastePricesCreate'])->name('waste-prices.create');
+
+    Route::post('/waste-prices', [TeacherController::class, 'wastePricesStore'])->name('waste-prices.store');
+
+    Route::get('/waste-prices/{id}/edit', [TeacherController::class, 'wastePricesEdit'])->name('waste-prices.edit');
+
+    Route::put('/waste-prices/{id}', [TeacherController::class, 'wastePricesUpdate'])->name('waste-prices.update');
+
+    Route::delete('/waste-prices/{id}', [TeacherController::class, 'wastePricesDestroy'])->name('waste-prices.destroy');
+
+    Route::get('/accounts', [TeacherController::class, 'accounts'])->name('accounts');
+
     Route::get('/{id}', [TeacherController::class, 'show'])->name('show')->whereNumber('id');
 
     Route::get('/create', [TeacherController::class, 'create'])->name('create');
