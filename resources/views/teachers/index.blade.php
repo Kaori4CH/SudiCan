@@ -1,4 +1,4 @@
-@extends(('Layouts.app-admin'))
+@extends('layouts.app-admin')
 
 @section('title', $title)
 
@@ -28,7 +28,7 @@
                 <p class="mt-2 text-2xl font-bold text-slate-800">{{ $stat['value'] }}</p>
                 <p class="mt-2 flex items-center gap-1 text-xs font-medium {{ $stat['trendUp'] === true ? 'text-emerald-600' : (($stat['warn'] ?? false) ? 'text-amber-600' : 'text-slate-400') }}">
                     @if ($stat['trendUp'] === true)
-                        <x-nav-icon name="trend-up" class="h-3.5 w-3.5" />
+                        <img src="{{ asset('images/greentriangle.png') }}" alt="" class="h-3 w-3">
                     @endif
                     {{ $stat['trend'] }}
                 </p>
