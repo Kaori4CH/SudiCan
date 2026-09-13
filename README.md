@@ -1,58 +1,226 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SudiCan — Sistem Pengelolaan Sampah & Kas Kelas Berkelanjutan
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="public/images/Logo.png" width="120" alt="SudiCan Logo">
 </p>
 
-## About Laravel
+<p align="center">
+  <strong>Solusi digital bank sampah sekolah untuk mengonversi sampah daur ulang menjadi saldo kas kelas dan poin penghargaan lingkungan hidup.</strong>
+</p>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 📌 Tentang SudiCan
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**SudiCan** (*Sudikah Mendaur?*) adalah platform web manajemen bank sampah di lingkungan sekolah yang menghubungkan partisipasi siswa dan pengawasan guru/administrator sekolah.
 
-## Learning Laravel
+Melalui sistem ini:
+1. Siswa atau pengurus kelas mengumpulkan dan menyetorkan sampah daur ulang (botol plastik, kertas karton, kaleng logam, dll.).
+2. Petugas/guru menimbang dan memvalidasi setoran sampah di sistem.
+3. Nilai rupiah dari sampah langsung dikonversi menjadi **Saldo Kas Kelas** serta poin **Green Class** untuk memicu kompetisi positif antarkelas.
+4. Kelas dapat mengajukan penarikan dana kas secara transparan melalui sistem untuk kebutuhan kegiatan atau kebersihan kelas.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🚀 Fitur Utama
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 1. Panel Siswa / Pengurus Kelas (`/student`)
+* **Dashboard Interaktif:**
+  * Metrik ringkas: Total sampah terkumpul (kg), total kas kelas (Rp), dan peringkat keaktifan kelas.
+  * **Kalkulator Estimasi Sampah:** Menggunakan Alpine.js untuk simulasi langsung perhitungan estimasi nilai Rupiah dan poin kas kelas berdasarkan jenis sampah dan berat (kg).
+  * **Green Class Leaderboard:** Peringkat kelas teraktif berdasarkan akumulasi poin daur ulang.
+  * **Grafik Tren Setoran:** Visualisasi tren akumulasi sampah 4 minggu terakhir menggunakan Chart.js.
+* **Waste Deposit:**
+  * Rekapitulasi sampah yang telah disetor, filter per periode bulan, serta riwayat penyetoran lengkap beserta nama validator.
+* **Cash Report:**
+  * Laporan arus kas kelas (pemasukan dari penukaran sampah & pengeluaran penarikan dana).
+  * Riwayat transaksi lengkap dengan rincian tanggal, sumber, nominal, dan sisa saldo.
+* **Pengajuan Penarikan Dana (`cash-withdrawal`):**
+  * Form pengajuan penarikan dana kas kelas (nominal, tujuan penggunaan, tanggal dibutuhkan, dan keterangan).
+  * Panduan syarat & ketentuan penarikan kas kelas.
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 2. Panel Guru & Admin Pengelola (`/teachers`)
+* **Dashboard Monitoring Sekolah:**
+  * Ringkasan total sampah terkumpul sekolah, perputaran kas sekolah, jumlah kelas aktif, dan notifikasi pengajuan penarikan yang menunggu validasi.
+  * Grafik tren bulanan perputaran sampah sekolah.
+  * Daftar kelas teratas (*Top Classes*) dan log aktivitas transaksi terbaru.
+* **Waste Deposit (Input Transaksi):**
+  * Pencatatan timbangan sampah yang disetor oleh masing-masing kelas.
+  * Kalkulasi otomatis preview nominal Rupiah dan poin secara langsung.
+* **Cash Report (Validasi Penarikan):**
+  * Daftar antrean pengajuan penarikan kas kelas yang berstatus *Pending*.
+  * Tombol aksi persetujuan (*Approve*) atau penolakan (*Reject*) penarikan kas kelas.
+* **Modul Master Data / CRUD Admin (`teachers/admin`):**
+  * **CRUD Kelas:** Tambah kelas baru (`create`), edit data kelas (`edit`), detail informasi kelas & riwayatnya (`show`), serta hapus kelas (`destroy`).
+  * **CRUD Manajemen Harga Sampah (`waste-prices`):** Pengaturan daftar jenis sampah, satuan unit (kg/liter), dan harga dasar per satuan.
+  * **Manajemen Akun (`accounts`):** Pengelolaan akun pengguna dan hak akses sistem.
 
+---
+
+### 3. Autentikasi & Navigasi (`/auth`)
+* **Halaman Register:** Pendaftaran akun dengan antarmuka bertema *forest green* dan ilustrasi maskot SudiCan.
+* **Halaman Login:** Masuk menggunakan nama pengguna/email dan kata sandi.
+* **Log Out Terintegrasi:** Tombol logout di sidebar langsung mengarahkan pengguna kembali ke alur autentikasi.
+
+---
+
+## 🛠️ Teknologi yang Digunakan
+
+* **Backend Framework:** [Laravel 12](https://laravel.com/) (PHP >= 8.2 / PHP 8.5)
+* **Template Engine:** Blade Templating
+* **Styling & UI:** [Tailwind CSS](https://tailwindcss.com/)
+* **Interaktivitas Frontend:** [Alpine.js](https://alpinejs.dev/) (Kalkulator estimasi & formulir dinamis)
+* **Visualisasi Data:** [Chart.js](https://www.chartjs.org/) (Grafik tren setoran & statistik)
+* **Database:** MySQL / MariaDB (Dukungan SQLite untuk testing lokal)
+* **Development Server:** Laragon / PHP Built-in Server
+
+---
+
+## 📋 Persyaratan Sistem
+
+Sebelum menjalankan aplikasi, pastikan komputer Anda telah terpasang:
+* **PHP** versi 8.2 atau yang lebih baru (ekstensi `bcmath`, `ctype`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml` aktif).
+* **Composer** (Dependency manager untuk PHP).
+* **MySQL** / MariaDB (atau Laragon / XAMPP).
+* **Git** (opsional).
+
+---
+
+## 💻 Panduan Instalasi & Menjalankan Aplikasi
+
+Ikuti langkah-langkah berikut untuk menjalankan SudiCan di komputer lokal Anda:
+
+### 1. Salin / Buka Proyek
+Letakkan folder proyek di web server lokal Anda (misalnya di Laragon: `C:\laragon\www\SudiCan`).
+
+### 2. Pasang Dependensi Composer
+Buka terminal (PowerShell atau Git Bash) di direktori proyek, lalu jalankan:
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 3. Konfigurasi Environment File
+Salin file konfigurasi environment dari `.env.example`:
+```bash
+cp .env.example .env
+```
+*(Di Windows PowerShell: `copy .env.example .env`)*
 
-## Contributing
+Buka file `.env` dan sesuaikan koneksi database Anda:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=sudican
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 4. Generate Application Key
+```bash
+php artisan key:generate
+```
 
-## Code of Conduct
+### 5. Jalankan Migrasi Database
+Pastikan database dengan nama `sudican` sudah dibuat di MySQL, lalu jalankan:
+```bash
+php artisan migrate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 6. Jalankan Server Lokal
 
-## Security Vulnerabilities
+**Jika menggunakan Laragon:**
+* Cukup klik tombol **Start All** pada aplikasi Laragon.
+* Akses melalui browser pada alamat: [http://sudican.test](http://sudican.test)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Jika menggunakan `php artisan serve`:**
+```bash
+php artisan serve
+```
+* Akses melalui browser pada alamat: [http://localhost:8000](http://localhost:8000)
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🗺️ Peta Rute & Halaman (Daftar URL)
+
+### 🔐 Autentikasi
+| Rute | Metode | Nama Rute | Keterangan |
+|---|---|---|---|
+| `/auth/register` | GET | `auth.register` | Halaman pendaftaran pengguna |
+| `/auth/login` | GET | `auth.login` | Halaman login pengguna |
+| `/auth/logout` | POST | `auth.logout` | Proses logout |
+
+### 🎓 Panel Siswa
+| Rute | Metode | Nama Rute | Keterangan |
+|---|---|---|---|
+| `/student/dashboard` | GET | `student.dashboard` | Dashboard siswa & kalkulator estimasi |
+| `/student/waste-deposit` | GET | `student.deposit` | Riwayat setoran sampah siswa |
+| `/student/cash-report` | GET | `student.cash-report` | Laporan kas kelas |
+| `/student/cash-withdrawal` | GET | `student.cash-withdrawal` | Form permohonan penarikan kas |
+
+### 👨‍🏫 Panel Guru & Admin
+| Rute | Metode | Nama Rute | Keterangan |
+|---|---|---|---|
+| `/teachers` | GET | `teachers.index` | Dashboard utama pengelola |
+| `/teachers/waste-deposit` | GET / POST | `teachers.waste-deposit` | Input transaksi timbangan sampah |
+| `/teachers/cash-report` | GET | `teachers.cash-report` | Validasi penarikan kas kelas |
+| `/teachers/create` | GET / POST | `teachers.create` | CRUD: Tambah kelas baru |
+| `/teachers/{id}` | GET | `teachers.show` | CRUD: Detail kelas & riwayat |
+| `/teachers/{id}/edit` | GET / PUT / DEL | `teachers.edit` | CRUD: Edit / Hapus data kelas |
+| `/teachers/waste-prices` | GET | `teachers.waste-prices.index` | CRUD: Tabel harga sampah |
+| `/teachers/waste-prices/create` | GET / POST | `teachers.waste-prices.create` | CRUD: Tambah harga sampah baru |
+| `/teachers/waste-prices/{id}/edit` | GET / PUT / DEL | `teachers.waste-prices.edit` | CRUD: Edit / Hapus harga sampah |
+| `/teachers/accounts` | GET | `teachers.accounts` | Manajemen akun |
+
+---
+
+## 📁 Struktur Direktori Penting
+
+```
+SudiCan/
+├── app/
+│   ├── Http/
+│   │   └── Controllers/
+│   │       ├── AuthController.php      # Controller login, register, dan logout
+│   │       ├── StudentController.php   # Controller modul siswa (dashboard, kas, setoran)
+│   │       └── TeacherController.php   # Controller modul guru & admin
+│   └── Models/
+│       └── User.php                    # Model data pengguna
+├── public/
+│   └── images/                         # Asset gambar, ikon, dan banner SudiCan
+├── resources/
+│   └── views/
+│       ├── auth/
+│       │   ├── login.blade.php         # Tampilan halaman login
+│       │   └── register.blade.php      # Tampilan halaman register
+│       ├── layouts/
+│       │   ├── app-admin.blade.php     # Template induk panel guru/admin
+│       │   └── student.blade.php       # Template induk panel siswa
+│       ├── student/
+│       │   ├── dashboard.blade.php     # View dashboard siswa
+│       │   ├── waste-deposit.blade.php # View riwayat setoran sampah siswa
+│       │   ├── cash-report.blade.php   # View laporan kas siswa
+│       │   └── cash-withdrawal.blade.php# View pengajuan penarikan dana
+│       └── teachers/
+│           ├── index.blade.php         # View dashboard utama guru
+│           ├── waste-deposit.blade.php # View transaksi setoran sampah
+│           ├── cash-report.blade.php   # View validasi penarikan kas
+│           ├── leaderboard.blade.php   # Komponen ranking Green Class
+│           └── admin/                  # Sub-direktori khusus fitur CRUD Master Data
+│               ├── create.blade.php    # Form tambah kelas
+│               ├── edit.blade.php      # Form edit kelas
+│               ├── show.blade.php      # Detail kelas
+│               ├── waste-prices.blade.php # Tabel master harga sampah
+│               ├── waste-price-form.blade.php # Form tambah/edit harga sampah
+│               └── accounts.blade.php  # Pengaturan akun
+└── routes/
+    └── web.php                         # Definisi semua rute web aplikasi
+```
+
+---
+
+## 📄 Lisensi
+
+Proyek ini dikembangkan untuk kebutuhan operasional sistem pengelolaan sampah sekolah SudiCan di bawah lisensi terbuka [MIT](LICENSE).

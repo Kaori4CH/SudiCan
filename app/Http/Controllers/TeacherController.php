@@ -80,7 +80,7 @@ class TeacherController extends Controller
             ['date' => '10 Agu 2026', 'type' => 'Kertas/Karton', 'weight' => '8.0 kg', 'amount' => '+Rp16.000'],
         ];
 
-        return view('teachers.show', [
+        return view('teachers.admin.show', [
             'title' => $title,
             'class' => $class,
             'history' => $history,
@@ -95,7 +95,7 @@ class TeacherController extends Controller
     {
         $title = 'SudiCan - Tambah Kelas';
 
-        return view('teachers.create', [
+        return view('teachers.admin.create', [
             'title' => $title,
         ]);
     }
@@ -233,7 +233,7 @@ class TeacherController extends Controller
             'members' => 32,
         ];
 
-        return view('teachers.edit', [
+        return view('teachers.admin.edit', [
             'title' => $title,
             'class' => $class,
         ]);
@@ -275,7 +275,7 @@ class TeacherController extends Controller
     {
         $title = 'SudiCan - Manajemen Harga Sampah';
 
-        return view('teachers.waste-prices', [
+        return view('teachers.admin.waste-prices', [
             'title' => $title,
             'prices' => $this->dummyWastePrices(),
         ]);
@@ -289,7 +289,7 @@ class TeacherController extends Controller
     {
         $title = 'SudiCan - Tambah Jenis Sampah';
 
-        return view('teachers.waste-price-form', [
+        return view('teachers.admin.waste-price-form', [
             'title' => $title,
             'formAction' => route('teachers.waste-prices.store'),
             'method' => 'POST',
@@ -325,7 +325,7 @@ class TeacherController extends Controller
         $item = collect($this->dummyWastePrices())->firstWhere('id', (int) $id)
             ?? $this->dummyWastePrices()[0];
 
-        return view('teachers.waste-price-form', [
+        return view('teachers.admin.waste-price-form', [
             'title' => $title,
             'formAction' => route('teachers.waste-prices.update', $item['id']),
             'method' => 'PUT',
@@ -367,7 +367,7 @@ class TeacherController extends Controller
      */
     public function accounts()
     {
-        return view('teachers.accounts', [
+        return view('teachers.admin.accounts', [
             'title' => 'SudiCan - Manajemen Akun',
         ]);
     }
