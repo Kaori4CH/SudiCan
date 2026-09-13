@@ -71,9 +71,7 @@ Melalui sistem ini:
 * **Backend Framework:** [Laravel 12](https://laravel.com/) (PHP >= 8.2 / PHP 8.5)
 * **Template Engine:** Blade Templating
 * **Styling & UI:** [Tailwind CSS](https://tailwindcss.com/)
-* **Interaktivitas Frontend:** [Alpine.js](https://alpinejs.dev/) (Kalkulator estimasi & formulir dinamis)
-* **Visualisasi Data:** [Chart.js](https://www.chartjs.org/) (Grafik tren setoran & statistik)
-* **Database:** MySQL / MariaDB (Dukungan SQLite untuk testing lokal)
+* **Database:** MySQL 
 * **Development Server:** Laragon / PHP Built-in Server
 
 ---
@@ -173,51 +171,6 @@ php artisan serve
 | `/teachers/waste-prices/create` | GET / POST | `teachers.waste-prices.create` | CRUD: Tambah harga sampah baru |
 | `/teachers/waste-prices/{id}/edit` | GET / PUT / DEL | `teachers.waste-prices.edit` | CRUD: Edit / Hapus harga sampah |
 | `/teachers/accounts` | GET | `teachers.accounts` | Manajemen akun |
-
----
-
-## 📁 Struktur Direktori Penting
-
-```
-SudiCan/
-├── app/
-│   ├── Http/
-│   │   └── Controllers/
-│   │       ├── AuthController.php      # Controller login, register, dan logout
-│   │       ├── StudentController.php   # Controller modul siswa (dashboard, kas, setoran)
-│   │       └── TeacherController.php   # Controller modul guru & admin
-│   └── Models/
-│       └── User.php                    # Model data pengguna
-├── public/
-│   └── images/                         # Asset gambar, ikon, dan banner SudiCan
-├── resources/
-│   └── views/
-│       ├── auth/
-│       │   ├── login.blade.php         # Tampilan halaman login
-│       │   └── register.blade.php      # Tampilan halaman register
-│       ├── layouts/
-│       │   ├── app-admin.blade.php     # Template induk panel guru/admin
-│       │   └── student.blade.php       # Template induk panel siswa
-│       ├── student/
-│       │   ├── dashboard.blade.php     # View dashboard siswa
-│       │   ├── waste-deposit.blade.php # View riwayat setoran sampah siswa
-│       │   ├── cash-report.blade.php   # View laporan kas siswa
-│       │   └── cash-withdrawal.blade.php# View pengajuan penarikan dana
-│       └── teachers/
-│           ├── index.blade.php         # View dashboard utama guru
-│           ├── waste-deposit.blade.php # View transaksi setoran sampah
-│           ├── cash-report.blade.php   # View validasi penarikan kas
-│           ├── leaderboard.blade.php   # Komponen ranking Green Class
-│           └── admin/                  # Sub-direktori khusus fitur CRUD Master Data
-│               ├── create.blade.php    # Form tambah kelas
-│               ├── edit.blade.php      # Form edit kelas
-│               ├── show.blade.php      # Detail kelas
-│               ├── waste-prices.blade.php # Tabel master harga sampah
-│               ├── waste-price-form.blade.php # Form tambah/edit harga sampah
-│               └── accounts.blade.php  # Pengaturan akun
-└── routes/
-    └── web.php                         # Definisi semua rute web aplikasi
-```
 
 ---
 
