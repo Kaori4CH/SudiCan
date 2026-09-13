@@ -12,7 +12,7 @@
 
 ## 📌 Tentang SudiCan
 
-**SudiCan** (*Sudikah Mendaur?*) adalah platform web manajemen bank sampah di lingkungan sekolah yang menghubungkan partisipasi siswa dan pengawasan guru/administrator sekolah.
+**SudiCan** adalah platform web manajemen bank sampah di lingkungan sekolah yang menghubungkan partisipasi siswa dan pengawasan guru/administrator sekolah.
 
 Melalui sistem ini:
 1. Siswa atau pengurus kelas mengumpulkan dan menyetorkan sampah daur ulang (botol plastik, kertas karton, kaleng logam, dll.).
