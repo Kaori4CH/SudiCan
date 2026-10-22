@@ -20,6 +20,12 @@
             <div class="w-full max-w-sm">
                 <h1 class="text-4xl md:text-5xl font-bold text-white text-center mb-8">Login</h1>
 
+                @if (session('success'))
+                    <div class="mb-5 p-3.5 rounded-2xl bg-emerald-500/25 border border-emerald-300/40 text-white text-xs">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
                 @if ($errors->any())
                     <div class="mb-5 p-3 rounded-2xl bg-red-500/20 border border-red-300/40 text-white text-xs">
                         <ul class="list-disc list-inside space-y-1">
