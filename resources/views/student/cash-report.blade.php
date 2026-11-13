@@ -11,6 +11,44 @@
     <h1 class="text-2xl font-bold">Cash Report - Kelas {{ $className }}</h1>
     <p class="text-sm text-gray-500 mb-6">Ringkasan transaksi keuangan dari hasil penukaran sampah menjadi saldo kas kelas.</p>
 
+    @if (session('success'))
+        <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if (isset($pendingWithdrawals) && $pendingWithdrawals->isNotEmpty())
+        <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                    <img src="{{ asset('images/clock.png') }}" alt="" class="h-4 w-4">
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-amber-900">Pengajuan Penarikan Menunggu Persetujuan Guru</h3>
+                        <span class="rounded-full bg-amber-200/70 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                            {{ $pendingWithdrawals->count() }} Pengajuan Pending
+                        </span>
+                    </div>
+                    <div class="mt-2 divide-y divide-amber-200/60">
+                        @foreach ($pendingWithdrawals as $pw)
+                            <div class="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
+                                <div>
+                                    <p class="text-sm font-medium text-amber-950">{{ $pw->purpose }}</p>
+                                    @if ($pw->note)
+                                        <p class="text-xs text-amber-700">"{{ $pw->note }}"</p>
+                                    @endif
+                                    <p class="text-[11px] text-amber-600">Diajukan: {{ $pw->created_at ? $pw->created_at->translatedFormat('d F Y, H:i') : '-' }}</p>
+                                </div>
+                                <span class="text-base font-bold text-red-600">-{{ $formatCurrency($pw->amount) }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-xl p-5 shadow-sm flex items-center gap-4">
             <div class="w-11 h-11 rounded-full bg-green-50 flex items-center justify-center shrink-0">
@@ -19,9 +57,13 @@
             <div>
                 <p class="text-xs text-gray-400 uppercase tracking-wide">Total Pendapatan</p>
                 <p class="text-2xl font-bold mt-1">{{ $formatCurrency($totalIncome) }}</p>
-                <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
-                    <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 12% minggu ini
-                </p>
+                @if ($totalIncome > 0)
+                    <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> Akumulasi setoran
+                    </p>
+                @else
+                    <p class="text-xs text-gray-400 mt-1">Belum ada pendapatan</p>
+                @endif
             </div>
         </div>
 
@@ -32,9 +74,13 @@
             <div>
                 <p class="text-xs text-gray-400 uppercase tracking-wide">Total Penarikan</p>
                 <p class="text-2xl font-bold mt-1">{{ $formatCurrency($totalWithdrawal) }}</p>
-                <p class="text-xs text-red-500 mt-1 flex items-center gap-1">
-                    <img src="{{ asset('images/redtriangle.png') }}" alt="" class="w-2.5 h-2.5"> 8% minggu ini
-                </p>
+                @if ($totalWithdrawal > 0)
+                    <p class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                        <img src="{{ asset('images/redtriangle.png') }}" alt="" class="w-2.5 h-2.5"> Penarikan disetujui
+                    </p>
+                @else
+                    <p class="text-xs text-gray-400 mt-1">Belum ada penarikan dana</p>
+                @endif
             </div>
         </div>
 
@@ -45,9 +91,13 @@
             <div>
                 <p class="text-xs text-gray-400 uppercase tracking-wide">Saldo Tersedia</p>
                 <p class="text-2xl font-bold mt-1">{{ $formatCurrency($availableBalance) }}</p>
-                <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
-                    <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 15% dari minggu lalu
-                </p>
+                @if ($availableBalance > 0)
+                    <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> Saldo siap digunakan
+                    </p>
+                @else
+                    <p class="text-xs text-gray-400 mt-1">Saldo kas saat ini Rp 0</p>
+                @endif
             </div>
         </div>
     </div>
@@ -85,13 +135,26 @@
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse($transactions as $t)
-                    <tr>
+                    <tr class="{{ ($t['is_pending'] ?? false) ? 'bg-amber-50/50' : '' }}">
                         <td class="px-5 py-3">{{ $t['date'] }}</td>
-                        <td class="px-5 py-3 font-medium">{{ $t['type'] }}</td>
+                        <td class="px-5 py-3 font-medium">
+                            @if ($t['is_pending'] ?? false)
+                                <span class="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                    Menunggu Persetujuan
+                                </span>
+                            @else
+                                {{ $t['type'] }}
+                            @endif
+                        </td>
                         <td class="px-5 py-3 text-gray-500">{{ $t['source'] }}</td>
                         <td class="px-5 py-3 text-right">{{ $t['deposit'] ? $formatCurrency($t['deposit']) : '-' }}</td>
-                        <td class="px-5 py-3 text-right">{{ $t['withdrawal'] ? $formatCurrency($t['withdrawal']) : '-' }}</td>
-                        <td class="px-5 py-3 text-right font-medium">{{ $formatCurrency($t['balance']) }}</td>
+                        <td class="px-5 py-3 text-right {{ ($t['is_pending'] ?? false) ? 'text-amber-600 font-medium' : '' }}">
+                            {{ $t['withdrawal'] ? $formatCurrency($t['withdrawal']) : '-' }}
+                        </td>
+                        <td class="px-5 py-3 text-right font-medium">
+                            {{ $t['balance'] !== null ? $formatCurrency($t['balance']) : '-' }}
+                        </td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="px-5 py-6 text-center text-gray-400">Belum ada transaksi</td></tr>

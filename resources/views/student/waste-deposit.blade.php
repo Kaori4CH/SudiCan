@@ -19,9 +19,13 @@
             <div>
                 <p class="text-xs text-gray-400 uppercase tracking-wide">Total Sampah Terkumpul</p>
                 <p class="text-2xl font-bold mt-1">{{ $totalWaste }} kg</p>
-                <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
-                    <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 12% minggu ini
-                </p>
+                @if ($totalWaste > 0)
+                    <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> Akumulasi setoran
+                    </p>
+                @else
+                    <p class="text-xs text-gray-400 mt-1">Belum ada sampah terkumpul</p>
+                @endif
             </div>
         </div>
 
