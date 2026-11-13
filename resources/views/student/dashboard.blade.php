@@ -22,16 +22,28 @@
         <div class="bg-white rounded-xl p-5 shadow-sm">
             <p class="text-xs text-gray-400 uppercase tracking-wide">Total Sampah Terkumpul</p>
             <p class="text-2xl font-bold mt-1">{{ number_format($totalWaste, 0, ',', '.') }} kg</p>
-            <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 12% minggu ini
-            </p>
+            @if ($totalWaste > 0)
+                <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> {{ $wasteTrendText ?? 'Setoran aktif minggu ini' }}
+                </p>
+            @else
+                <p class="text-xs text-gray-400 mt-1">
+                    Belum ada setoran minggu ini
+                </p>
+            @endif
         </div>
         <div class="bg-white rounded-xl p-5 shadow-sm">
             <p class="text-xs text-gray-400 uppercase tracking-wide">Total Kas Terkumpul</p>
             <p class="text-2xl font-bold mt-1">Rp {{ number_format($totalCash, 0, ',', '.') }}</p>
-            <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> 12% minggu ini
-            </p>
+            @if ($totalCash > 0)
+                <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <img src="{{ asset('images/greentriangle.png') }}" alt="" class="w-2.5 h-2.5"> {{ $cashTrendText ?? 'Kas bertambah minggu ini' }}
+                </p>
+            @else
+                <p class="text-xs text-gray-400 mt-1">
+                    Belum ada kas masuk minggu ini
+                </p>
+            @endif
         </div>
         <div class="bg-white rounded-xl p-5 shadow-sm">
             <p class="text-xs text-gray-400 uppercase tracking-wide">Kelas Teraktif</p>

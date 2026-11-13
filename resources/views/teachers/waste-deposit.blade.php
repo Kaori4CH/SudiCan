@@ -34,7 +34,14 @@
     <div class="mb-6 rounded-xl border border-[#E4EFE4] bg-white p-6">
         <h2 class="mb-5 text-base font-semibold text-slate-800">Form Setoran Baru</h2>
 
-        <form action="{{ route('teachers.waste-deposit.store') }}" method="POST" class="space-y-5">
+        <form action="{{ route('teachers.waste-deposit.store') }}" method="POST" class="space-y-5"
+            x-data="{
+                prices: {{ json_encode(collect($wasteTypes)->pluck('price', 'name')) }},
+                selectedWaste: '{{ $selectedWaste }}',
+                weight: {{ $weight }},
+                get rupiah() { return Math.round((this.prices[this.selectedWaste] || 0) * (this.weight || 0)); },
+                get points() { return Math.round((this.weight || 0) * 10); }
+            }">
             @csrf
 
             <div>
@@ -48,9 +55,9 @@
 
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-slate-700">Jenis Sampah</label>
-                <select name="waste_type" class="w-full rounded-lg border border-[#DDE7DD] bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <select name="waste_type" x-model="selectedWaste" class="w-full rounded-lg border border-[#DDE7DD] bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                     @foreach ($wasteTypes as $waste)
-                        <option value="{{ $waste['name'] }}" @selected($waste['name'] === $selectedWaste)>
+                        <option value="{{ $waste['name'] }}">
                             {{ $waste['name'] }} — Rp{{ number_format($waste['price'], 0, ',', '.') }}/kg
                         </option>
                     @endforeach
@@ -59,7 +66,7 @@
 
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-slate-700">Berat (kg)</label>
-                <input type="number" step="0.1" min="0.1" name="weight" value="{{ $weight }}"
+                <input type="number" step="0.1" min="0.1" name="weight" x-model.number="weight"
                     class="w-full rounded-lg border border-[#DDE7DD] bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
             </div>
 
@@ -73,11 +80,11 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700/70">Nilai Rupiah</p>
-                        <p class="mt-1 text-2xl font-bold text-emerald-700">{{ $previewRupiah }}</p>
+                        <p class="mt-1 text-2xl font-bold text-emerald-700" x-text="'Rp ' + rupiah.toLocaleString('id-ID')">{{ $previewRupiah }}</p>
                     </div>
                     <div class="text-right">
                         <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700/70">Poin Kas Kelas</p>
-                        <p class="mt-1 text-2xl font-bold text-emerald-700">{{ $previewPoints }}</p>
+                        <p class="mt-1 text-2xl font-bold text-emerald-700" x-text="points + ' pts'">{{ $previewPoints }}</p>
                     </div>
                 </div>
             </div>

@@ -16,7 +16,7 @@
 </head>
 <body class="bg-[#556F50] text-gray-800 antialiased">
     <div class="min-h-screen grid grid-cols-1 md:grid-cols-2">
-        <div class="bg-[#556F50] flex flex-col justify-center items-center px-6 py-12 md:px-12 order-2 md:order-1">
+        <div class="bg-[#556F50] flex flex-col justify-center items-center px-6 py-12 md:px-12 order-2 md:order-1 relative z-10">
             <div class="w-full max-w-sm">
                 <h1 class="text-4xl md:text-5xl font-bold text-white text-center mb-8">Register</h1>
 
@@ -62,13 +62,13 @@
                     <div class="text-center pt-2">
                         <p class="text-xs md:text-sm text-gray-100">
                             Have an account?
-                            <a href="{{ route('auth.login') }}" class="text-blue-500 font-medium hover:underline ml-1">Login</a>
+                            <a href="{{ route('auth.login') }}" class="text-blue-300 hover:text-white font-semibold underline underline-offset-2 ml-1 cursor-pointer transition">Login</a>
                         </p>
                     </div>
 
                     <div class="pt-4 flex justify-center">
                         <button type="submit"
-                                class="w-48 bg-[#E57853] hover:bg-[#d96a45] text-white font-medium py-3 px-6 rounded-2xl shadow-sm transition-colors text-center text-sm md:text-base">
+                                class="w-48 bg-[#E57853] hover:bg-[#d96a45] text-white font-medium py-3 px-6 rounded-2xl shadow-sm transition-colors text-center text-sm md:text-base cursor-pointer">
                             Register
                         </button>
                     </div>
@@ -76,14 +76,11 @@
             </div>
         </div>
 
-        <div class="bg-white relative flex flex-col justify-center items-center p-8 md:p-12 order-1 md:order-2 min-h-[300px] md:min-h-screen">
-            <div class="absolute top-6 right-6 md:top-8 md:right-10 flex items-center gap-2">
+        <div class="relative order-1 md:order-2 min-h-[300px] md:min-h-screen overflow-hidden">
+            <img src="{{ asset('images/logbanner.png') }}" alt="SudiCan Banner" class="absolute inset-0 h-full w-full object-cover">
+            <div class="absolute top-6 right-6 md:top-8 md:right-10 flex items-center gap-2 z-10">
                 <img src="{{ asset('images/Logo.png') }}" alt="SudiCan Logo" class="w-8 h-8 object-contain">
-                <span class="text-lg font-bold text-[#1E3E34]">SudiCan</span>
-            </div>
-
-            <div class="w-full flex items-center justify-center pt-12 md:pt-0">
-                <img src="{{ asset('images/loginlogo.png') }}" alt="SudiCan Banner" class="w-full max-w-sm md:max-w-md max-h-[75vh] object-contain">
+                <span class="text-lg font-bold text-white drop-shadow-md">SudiCan</span>
             </div>
         </div>
     </div>

@@ -2,428 +2,420 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashWithdrawal;
+use App\Models\Classroom;
+use App\Models\WasteDeposit;
+use App\Models\WastePrice;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TeacherController extends Controller
 {
-    /**
-     * GET /teachers -> name('teachers.index')
-     * Dashboard utama Admin/Pengelola Bank Sampah + ringkasan pengajuan pending.
-     */
-    public function index()
+    public function index(): View
     {
         $title = 'SudiCan - Dashboard';
-        $today = $this->formatIndonesianDate(now());
+        $today = now()->translatedFormat('l, d F Y');
+
+        $totalWaste = (float) WasteDeposit::sum('weight');
+        $totalDepositValue = (float) WasteDeposit::sum('value');
+        $totalApprovedWithdrawal = (float) CashWithdrawal::approved()->sum('amount');
+        $totalCash = max(0, $totalDepositValue - $totalApprovedWithdrawal);
+        $activeClassCount = Classroom::count();
+        $pendingCount = CashWithdrawal::pending()->count();
 
         $stats = [
-            ['label' => 'Total Sampah Terkumpul', 'value' => '4.820 kg', 'trend' => '9% bulan ini', 'trendUp' => true],
-            ['label' => 'Total Perputaran Kas Sekolah', 'value' => 'Rp 42.350.000', 'trend' => '14% bulan ini', 'trendUp' => true],
-            ['label' => 'Kelas Aktif', 'value' => '24 Kelas', 'trend' => 'dari 26 kelas terdaftar', 'trendUp' => null],
-            ['label' => 'Pengajuan Pending', 'value' => '2', 'trend' => 'menunggu validasi Anda', 'trendUp' => null, 'warn' => true],
+            [
+                'label' => 'Total Sampah Terkumpul',
+                'value' => number_format($totalWaste, 0, ',', '.').' kg',
+                'trend' => 'bulan ini',
+                'trendUp' => true,
+            ],
+            [
+                'label' => 'Total Perputaran Kas Sekolah',
+                'value' => 'Rp '.number_format($totalCash, 0, ',', '.'),
+                'trend' => 'bulan ini',
+                'trendUp' => true,
+            ],
+            [
+                'label' => 'Kelas Aktif',
+                'value' => $activeClassCount.' Kelas',
+                'trend' => 'terdaftar di sistem',
+                'trendUp' => null,
+            ],
+            [
+                'label' => 'Pengajuan Pending',
+                'value' => (string) $pendingCount,
+                'trend' => $pendingCount > 0 ? 'menunggu validasi Anda' : 'semua pengajuan selesai',
+                'trendUp' => null,
+                'warn' => $pendingCount > 0,
+            ],
         ];
 
-        $monthly = [
-            ['label' => 'Mar', 'value' => 610],
-            ['label' => 'Apr', 'value' => 705],
-            ['label' => 'Mei', 'value' => 668],
-            ['label' => 'Jun', 'value' => 788],
-            ['label' => 'Jul', 'value' => 845],
-            ['label' => 'Agu', 'value' => 920],
-        ];
+        $months = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $sum = (float) WasteDeposit::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->sum('weight');
+            $months[] = [
+                'label' => $date->translatedFormat('M'),
+                'value' => (int) round($sum),
+            ];
+        }
 
-        $topClasses = [
-            ['id' => 1, 'rank' => 1, 'name' => 'XII TKJ 1', 'points' => 945],
-            ['id' => 2, 'rank' => 2, 'name' => 'XII TKJ 2', 'points' => 780],
-            ['id' => 3, 'rank' => 3, 'name' => 'XII TKJ 3', 'points' => 512],
-            ['id' => 4, 'rank' => 4, 'name' => 'XII AKL', 'points' => 490],
-            ['id' => 5, 'rank' => 5, 'name' => 'XII BiD', 'points' => 385],
-        ];
+        $topClasses = Classroom::orderByDesc('points')->take(5)->get()->map(fn ($c, $idx) => [
+            'id' => $c->id,
+            'rank' => $idx + 1,
+            'name' => $c->name,
+            'points' => (int) $c->points,
+        ])->all();
 
-        $activities = [
-            ['date' => '18 Agu 2026', 'class' => 'XII TKJ 1', 'type' => 'Setoran', 'detail' => 'Botol Plastik · 5.2 kg', 'amount' => '+Rp15.600', 'positive' => true],
-            ['date' => '18 Agu 2026', 'class' => 'Kelas 8B', 'type' => 'Setoran', 'detail' => 'Kaleng Logam · 3 kg', 'amount' => '+Rp12.000', 'positive' => true],
-            ['date' => '17 Agu 2026', 'class' => 'Kelas 7A', 'type' => 'Penarikan', 'detail' => 'Pembelian alat kebersihan', 'amount' => '-Rp150.000', 'positive' => false],
-            ['date' => '17 Agu 2026', 'class' => 'Kelas 8A', 'type' => 'Setoran', 'detail' => 'Kertas Karton · 8 kg', 'amount' => '+Rp16.000', 'positive' => true],
-            ['date' => '16 Agu 2026', 'class' => 'Kelas 9C', 'type' => 'Setoran', 'detail' => 'Botol Plastik · 4 kg', 'amount' => '+Rp12.000', 'positive' => true],
-        ];
+        $recentDeposits = WasteDeposit::with('classroom')->latest()->take(3)->get()->map(fn ($d) => [
+            'date' => $d->created_at ? $d->created_at->translatedFormat('d M Y') : '-',
+            'class' => $d->classroom?->name ?? '-',
+            'type' => 'Setoran',
+            'detail' => $d->waste_type.' · '.(float) $d->weight.' kg',
+            'amount' => '+Rp'.number_format($d->value, 0, ',', '.'),
+            'positive' => true,
+            'raw_date' => $d->created_at,
+        ]);
+
+        $recentWithdrawals = CashWithdrawal::with('classroom')->approved()->latest()->take(2)->get()->map(fn ($w) => [
+            'date' => $w->created_at ? $w->created_at->translatedFormat('d M Y') : '-',
+            'class' => $w->classroom?->name ?? '-',
+            'type' => 'Penarikan',
+            'detail' => $w->purpose,
+            'amount' => '-Rp'.number_format($w->amount, 0, ',', '.'),
+            'positive' => false,
+            'raw_date' => $w->created_at,
+        ]);
+
+        $activities = $recentDeposits->concat($recentWithdrawals)->sortByDesc('raw_date')->values()->all();
 
         return view('teachers.index', [
             'title' => $title,
             'today' => $today,
             'stats' => $stats,
-            'monthly' => $monthly,
+            'monthly' => $months,
             'topClasses' => $topClasses,
             'activities' => $activities,
         ]);
     }
 
-    /**
-     * GET /teachers/{id} -> name('teachers.show')
-     * Detail 1 kelas.
-     */
-    public function show(string $id)
+    public function show(string $id): View
     {
         $title = 'SudiCan - Detail Kelas';
+        $classroom = Classroom::with(['wasteDeposits' => fn ($q) => $q->latest()->take(15)])->findOrFail($id);
 
-        $class = [
-            'id' => $id,
-            'name' => 'XII TKJ 1',
-            'totalWaste' => '945 kg',
-            'totalCash' => 'Rp 4.250.000',
-            'points' => 945,
-            'members' => 32,
-        ];
-
-        $history = [
-            ['date' => '18 Agu 2026', 'type' => 'Botol Plastik', 'weight' => '5.2 kg', 'amount' => '+Rp15.600'],
-            ['date' => '15 Agu 2026', 'type' => 'Kaleng Logam', 'weight' => '3.0 kg', 'amount' => '+Rp12.000'],
-            ['date' => '10 Agu 2026', 'type' => 'Kertas/Karton', 'weight' => '8.0 kg', 'amount' => '+Rp16.000'],
-        ];
+        $history = $classroom->wasteDeposits->map(fn ($d) => [
+            'date' => $d->created_at ? $d->created_at->translatedFormat('d M Y') : '-',
+            'type' => $d->waste_type,
+            'weight' => (float) $d->weight.' kg',
+            'amount' => '+Rp'.number_format($d->value, 0, ',', '.'),
+        ])->all();
 
         return view('teachers.admin.show', [
             'title' => $title,
-            'class' => $class,
+            'class' => $classroom,
             'history' => $history,
         ]);
     }
 
-    /**
-     * GET /teachers/create -> name('teachers.create')
-     * Form Tambah Kelas baru.
-     */
-    public function create()
+    public function create(): View
     {
-        $title = 'SudiCan - Tambah Kelas';
-
         return view('teachers.admin.create', [
-            'title' => $title,
+            'title' => 'SudiCan - Tambah Kelas',
         ]);
     }
 
-    /**
-     * POST /teachers -> name('teachers.store')
-     * Simpan kelas baru.
-     */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:50',
-            'homeroom_teacher' => 'required|string|max:100',
-            'members' => 'required|integer|min:1',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:50', 'unique:classrooms,name'],
+            'homeroom_teacher' => ['required', 'string', 'max:100'],
+            'members' => ['required', 'integer', 'min:1'],
         ]);
 
-        // NOTE: penyimpanan ke database belum diimplementasikan (masih data dummy).
+        Classroom::create([
+            'name' => $validated['name'],
+            'homeroom_teacher' => $validated['homeroom_teacher'],
+            'members' => $validated['members'],
+            'points' => 0,
+        ]);
 
         return redirect()->route('teachers.index')->with('success', 'Kelas baru berhasil ditambahkan.');
     }
 
-    /**
-     * GET /teachers/waste-deposit -> name('teachers.waste-deposit')
-     * Form Waste Deposit — Input Transaksi.
-     */
-    public function wasteDeposit()
+    public function wasteDeposit(): View
     {
         $title = 'SudiCan - Waste Deposit';
 
-        $classes = ['Kelas 7A', 'Kelas 8A', 'Kelas 8B', 'Kelas 9C', 'XI TKJ 1', 'XII TKJ 1', 'XII TKJ 2', 'XII TKJ 3', 'XII AKL', 'XII BiD'];
+        $classes = Classroom::orderBy('name')->pluck('name')->all();
 
-        $wasteTypes = [
-            ['name' => 'Botol Plastik', 'price' => 3000],
-            ['name' => 'Kaleng Logam', 'price' => 4000],
-            ['name' => 'Kertas/Karton', 'price' => 2000],
-            ['name' => 'Kaca', 'price' => 1500],
-            ['name' => 'Minyak Jelantah', 'price' => 5000],
-        ];
+        $wastePrices = WastePrice::all()->map(fn ($wp) => [
+            'name' => $wp->name,
+            'price' => (int) $wp->price,
+        ])->all();
 
-        $history = [
-            ['time' => '18 Agu · 09:12', 'class' => 'XII TKJ 1', 'type' => 'Botol Plastik', 'weight' => '5.2 kg', 'amount' => '+Rp15.600', 'points' => 52],
-            ['time' => '18 Agu · 08:47', 'class' => 'XII AKL', 'type' => 'Kaleng Logam', 'weight' => '3.0 kg', 'amount' => '+Rp12.000', 'points' => 40],
-            ['time' => '17 Agu · 14:20', 'class' => 'XII TKJ 2', 'type' => 'Kertas/Karton', 'weight' => '8.0 kg', 'amount' => '+Rp16.000', 'points' => 53],
-            ['time' => '17 Agu · 10:05', 'class' => 'XII TKJ 3', 'type' => 'Botol Plastik', 'weight' => '4.0 kg', 'amount' => '+Rp12.000', 'points' => 40],
-            ['time' => '16 Agu · 13:30', 'class' => 'XII BiD', 'type' => 'Kaca', 'weight' => '6.5 kg', 'amount' => '+Rp9.750', 'points' => 33],
-            ['time' => '15 Agu · 09:50', 'class' => 'XI TKJ 1', 'type' => 'Minyak Jelantah', 'weight' => '2.0 kg', 'amount' => '+Rp10.000', 'points' => 33],
-        ];
+        $history = WasteDeposit::with('classroom')->latest()->take(10)->get()->map(fn ($d) => [
+            'time' => $d->created_at ? $d->created_at->translatedFormat('d M · H:i') : '-',
+            'class' => $d->classroom?->name ?? '-',
+            'type' => $d->waste_type,
+            'weight' => (float) $d->weight.' kg',
+            'amount' => '+Rp'.number_format($d->value, 0, ',', '.'),
+            'points' => (int) $d->points,
+        ])->all();
+
+        $selectedClass = $classes[0] ?? 'Kelas Belum Terdaftar';
+        $selectedWaste = $wastePrices[0]['name'] ?? 'Botol Plastik';
+        $unitPrice = $wastePrices[0]['price'] ?? 3000;
+        $defaultWeight = 1.0;
 
         return view('teachers.waste-deposit', [
             'title' => $title,
             'classes' => $classes,
-            'wasteTypes' => $wasteTypes,
+            'wasteTypes' => $wastePrices,
             'history' => $history,
-            'selectedClass' => 'Kelas 8B',
-            'selectedWaste' => 'Botol Plastik',
-            'weight' => 5.2,
-            'previewRupiah' => 'Rp 15.600',
-            'previewPoints' => '52 pts',
+            'selectedClass' => $selectedClass,
+            'selectedWaste' => $selectedWaste,
+            'weight' => $defaultWeight,
+            'previewRupiah' => 'Rp '.number_format($unitPrice * $defaultWeight, 0, ',', '.'),
+            'previewPoints' => round($defaultWeight * 10).' pts',
         ]);
     }
 
-    /**
-     * POST /teachers/waste-deposit -> name('teachers.waste-deposit.store')
-     * Simpan setoran sampah baru.
-     */
-    public function storeWasteDeposit(Request $request)
+    public function storeWasteDeposit(Request $request): RedirectResponse
     {
-        $request->validate([
-            'class' => 'required|string',
-            'waste_type' => 'required|string',
-            'weight' => 'required|numeric|min:0.1',
-            'note' => 'nullable|string',
+        $validated = $request->validate([
+            'class' => ['required', 'string'],
+            'waste_type' => ['required', 'string'],
+            'weight' => ['required', 'numeric', 'min:0.1'],
+            'note' => ['nullable', 'string'],
         ]);
 
-        // NOTE: penyimpanan ke database belum diimplementasikan (masih data dummy).
+        $classroom = Classroom::where('name', $validated['class'])->firstOrFail();
+        $wastePrice = WastePrice::where('name', $validated['waste_type'])->first();
+
+        $unitPrice = $wastePrice ? (float) $wastePrice->price : 3000;
+        $value = round($validated['weight'] * $unitPrice);
+        $points = (int) round($validated['weight'] * 10);
+
+        $classroom->wasteDeposits()->create([
+            'waste_price_id' => $wastePrice?->id,
+            'waste_type' => $validated['waste_type'],
+            'weight' => $validated['weight'],
+            'value' => $value,
+            'points' => $points,
+            'validator_id' => Auth::id(),
+            'validator_name' => Auth::user()?->name ?? 'Admin SudiCan',
+            'deposit_date' => now(),
+            'note' => $validated['note'] ?? null,
+        ]);
+
+        $classroom->increment('points', $points);
 
         return redirect()->route('teachers.waste-deposit')->with('success', 'Setoran berhasil dicatat.');
     }
 
-    /**
-     * GET /teachers/cash-report -> name('teachers.cash-report')
-     * Halaman Cash Report — Validasi Penarikan (daftar semua pengajuan pending).
-     */
-    public function cashReport()
+    public function cashReport(): View
     {
         $title = 'SudiCan - Cash Report';
 
+        $totalDepositValue = (float) WasteDeposit::sum('value');
+        $totalApprovedWithdrawal = (float) CashWithdrawal::approved()->sum('amount');
+        $totalSchoolCash = max(0, $totalDepositValue - $totalApprovedWithdrawal);
+
+        $monthWithdrawal = (float) CashWithdrawal::approved()
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('amount');
+
+        $monthWithdrawalCount = CashWithdrawal::approved()
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        $pendingCount = CashWithdrawal::pending()->count();
+        $classCount = Classroom::count();
+
         $stats = [
-            ['label' => 'Saldo Kas Sekolah', 'value' => 'Rp 38.920.400', 'note' => 'terkumpul dari 24 kelas'],
-            ['label' => 'Total Penarikan Bulan Ini', 'value' => 'Rp 1.925.000', 'note' => 'dari 9 transaksi'],
-            ['label' => 'Menunggu Validasi', 'value' => '2', 'note' => 'pengajuan perlu diproses', 'warn' => true],
+            [
+                'label' => 'Saldo Kas Sekolah',
+                'value' => 'Rp '.number_format($totalSchoolCash, 0, ',', '.'),
+                'note' => 'terkumpul dari '.$classCount.' kelas',
+            ],
+            [
+                'label' => 'Total Penarikan Bulan Ini',
+                'value' => 'Rp '.number_format($monthWithdrawal, 0, ',', '.'),
+                'note' => 'dari '.$monthWithdrawalCount.' transaksi',
+            ],
+            [
+                'label' => 'Menunggu Validasi',
+                'value' => (string) $pendingCount,
+                'note' => 'pengajuan perlu diproses',
+                'warn' => $pendingCount > 0,
+            ],
         ];
+
+        $pending = CashWithdrawal::with(['classroom', 'user'])
+            ->pending()
+            ->latest()
+            ->get()
+            ->map(fn ($w) => [
+                'id' => $w->id,
+                'class' => $w->classroom?->name ?? 'Kelas tidak diketahui',
+                'requester' => $w->user?->name ?? 'Pengurus Kelas',
+                'classBalance' => $w->classroom ? 'Rp '.number_format($w->classroom->availableBalance(), 0, ',', '.') : '-',
+                'submittedAt' => $w->created_at ? $w->created_at->translatedFormat('d M Y · H:i') : '-',
+                'amount' => 'Rp '.number_format($w->amount, 0, ',', '.'),
+                'purpose' => $w->purpose,
+                'neededAt' => $w->needed_at ? $w->needed_at->translatedFormat('d M Y') : '-',
+                'note' => $w->note ?? '-',
+            ])->all();
+
+        $history = CashWithdrawal::with(['classroom', 'user', 'approver'])
+            ->whereIn('status', ['approved', 'rejected'])
+            ->latest()
+            ->take(15)
+            ->get()
+            ->map(fn ($w) => [
+                'id' => $w->id,
+                'class' => $w->classroom?->name ?? 'Kelas tidak diketahui',
+                'requester' => $w->user?->name ?? 'Pengurus Kelas',
+                'date' => $w->updated_at ? $w->updated_at->translatedFormat('d M Y · H:i') : '-',
+                'amount' => 'Rp '.number_format($w->amount, 0, ',', '.'),
+                'purpose' => $w->purpose,
+                'status' => $w->status,
+                'approver' => $w->approver?->name ?? 'Admin Sekolah',
+            ])->all();
 
         return view('teachers.cash-report', [
             'title' => $title,
             'stats' => $stats,
-            'pending' => $this->dummyPendingWithdrawals(),
+            'pending' => $pending,
+            'history' => $history,
         ]);
     }
 
-    /**
-     * PUT /teachers/cash-report/{id}/approve -> name('teachers.cash-report.approve')
-     * Setujui & cairkan pengajuan penarikan kas.
-     */
-    public function approveWithdrawal(string $id)
+    public function approveWithdrawal(string $id): RedirectResponse
     {
-        // NOTE: proses pencairan dana belum terhubung ke database (masih data dummy).
+        $withdrawal = CashWithdrawal::findOrFail($id);
+        $withdrawal->approve(Auth::id());
 
         return redirect()->route('teachers.cash-report')->with('success', "Pengajuan #{$id} disetujui dan dicairkan.");
     }
 
-    /**
-     * DELETE /teachers/cash-report/{id}/reject -> name('teachers.cash-report.reject')
-     * Tolak pengajuan penarikan kas.
-     */
-    public function rejectWithdrawal(string $id)
+    public function rejectWithdrawal(string $id): RedirectResponse
     {
-        // NOTE: proses penolakan belum terhubung ke database (masih data dummy).
+        $withdrawal = CashWithdrawal::findOrFail($id);
+        $withdrawal->reject();
 
         return redirect()->route('teachers.cash-report')->with('success', "Pengajuan #{$id} ditolak.");
     }
 
-    /**
-     * GET /teachers/{id}/edit -> name('teachers.edit')
-     * Form Edit Kelas.
-     */
-    public function edit(string $id)
+    public function edit(string $id): View
     {
-        $title = 'SudiCan - Edit Kelas';
-
-        $class = [
-            'id' => $id,
-            'name' => 'XII TKJ 1',
-            'homeroom_teacher' => 'Bu Sari Wulandari',
-            'members' => 32,
-        ];
+        $classroom = Classroom::findOrFail($id);
 
         return view('teachers.admin.edit', [
-            'title' => $title,
-            'class' => $class,
+            'title' => 'SudiCan - Edit Kelas',
+            'class' => $classroom,
         ]);
     }
 
-    /**
-     * PUT /teachers/{id} -> name('teachers.update')
-     * Simpan perubahan data kelas.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:50',
-            'homeroom_teacher' => 'required|string|max:100',
-            'members' => 'required|integer|min:1',
+        $classroom = Classroom::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:50', 'unique:classrooms,name,'.$classroom->id],
+            'homeroom_teacher' => ['required', 'string', 'max:100'],
+            'members' => ['required', 'integer', 'min:1'],
         ]);
 
-        // NOTE: penyimpanan ke database belum diimplementasikan (masih data dummy).
+        $classroom->update($validated);
 
-        return redirect()->route('teachers.show', $id)->with('success', 'Data kelas berhasil diperbarui.');
+        return redirect()->route('teachers.show', $classroom->id)->with('success', 'Data kelas berhasil diperbarui.');
     }
 
-    /**
-     * DELETE /teachers/{id} -> name('teachers.destroy')
-     * Hapus kelas.
-     */
-    public function destroy(string $id)
+    public function destroy(string $id): RedirectResponse
     {
-        // NOTE: penghapusan dari database belum diimplementasikan (masih data dummy).
+        Classroom::findOrFail($id)->delete();
 
         return redirect()->route('teachers.index')->with('success', "Kelas #{$id} berhasil dihapus.");
     }
 
-    /**
-     * GET /teachers/waste-prices -> name('teachers.waste-prices.index')
-     * Manajemen Harga Sampah — daftar jenis sampah & harga per kg.
-     */
-    public function wastePrices()
+    public function wastePrices(): View
     {
-        $title = 'SudiCan - Manajemen Harga Sampah';
-
         return view('teachers.admin.waste-prices', [
-            'title' => $title,
-            'prices' => $this->dummyWastePrices(),
+            'title' => 'SudiCan - Manajemen Harga Sampah',
+            'prices' => WastePrice::latest()->get(),
         ]);
     }
 
-    /**
-     * GET /teachers/waste-prices/create -> name('teachers.waste-prices.create')
-     * Form tambah jenis sampah baru.
-     */
-    public function wastePricesCreate()
+    public function wastePricesCreate(): View
     {
-        $title = 'SudiCan - Tambah Jenis Sampah';
-
         return view('teachers.admin.waste-price-form', [
-            'title' => $title,
+            'title' => 'SudiCan - Tambah Jenis Sampah',
             'formAction' => route('teachers.waste-prices.store'),
             'method' => 'POST',
             'item' => null,
         ]);
     }
 
-    /**
-     * POST /teachers/waste-prices -> name('teachers.waste-prices.store')
-     * Simpan jenis sampah baru.
-     */
-    public function wastePricesStore(Request $request)
+    public function wastePricesStore(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'unit' => 'required|string|max:20',
-            'price' => 'required|numeric|min:0',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'unit' => ['required', 'string', 'max:20'],
+            'price' => ['required', 'numeric', 'min:0'],
         ]);
 
-        // NOTE: penyimpanan ke database belum diimplementasikan (masih data dummy).
+        WastePrice::create($validated);
 
         return redirect()->route('teachers.waste-prices.index')->with('success', 'Jenis sampah baru berhasil ditambahkan.');
     }
 
-    /**
-     * GET /teachers/waste-prices/{id}/edit -> name('teachers.waste-prices.edit')
-     * Form edit harga jenis sampah.
-     */
-    public function wastePricesEdit(string $id)
+    public function wastePricesEdit(string $id): View
     {
-        $title = 'SudiCan - Edit Jenis Sampah';
-
-        $item = collect($this->dummyWastePrices())->firstWhere('id', (int) $id)
-            ?? $this->dummyWastePrices()[0];
+        $wastePrice = WastePrice::findOrFail($id);
 
         return view('teachers.admin.waste-price-form', [
-            'title' => $title,
-            'formAction' => route('teachers.waste-prices.update', $item['id']),
+            'title' => 'SudiCan - Edit Jenis Sampah',
+            'formAction' => route('teachers.waste-prices.update', $wastePrice->id),
             'method' => 'PUT',
-            'item' => $item,
+            'item' => $wastePrice,
         ]);
     }
 
-    /**
-     * PUT /teachers/waste-prices/{id} -> name('teachers.waste-prices.update')
-     * Simpan perubahan harga jenis sampah.
-     */
-    public function wastePricesUpdate(Request $request, string $id)
+    public function wastePricesUpdate(Request $request, string $id): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'unit' => 'required|string|max:20',
-            'price' => 'required|numeric|min:0',
+        $wastePrice = WastePrice::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'unit' => ['required', 'string', 'max:20'],
+            'price' => ['required', 'numeric', 'min:0'],
         ]);
 
-        // NOTE: penyimpanan ke database belum diimplementasikan (masih data dummy).
+        $wastePrice->update($validated);
 
         return redirect()->route('teachers.waste-prices.index')->with('success', 'Harga jenis sampah berhasil diperbarui.');
     }
 
-    /**
-     * DELETE /teachers/waste-prices/{id} -> name('teachers.waste-prices.destroy')
-     * Hapus jenis sampah.
-     */
-    public function wastePricesDestroy(string $id)
+    public function wastePricesDestroy(string $id): RedirectResponse
     {
-        // NOTE: penghapusan dari database belum diimplementasikan (masih data dummy).
+        WastePrice::findOrFail($id)->delete();
 
         return redirect()->route('teachers.waste-prices.index')->with('success', 'Jenis sampah berhasil dihapus.');
     }
 
-    /**
-     * GET /teachers/accounts -> name('teachers.accounts')
-     * Manajemen Akun — placeholder, spesifikasi belum diberikan.
-     */
-    public function accounts()
+    public function accounts(): View
     {
         return view('teachers.admin.accounts', [
             'title' => 'SudiCan - Manajemen Akun',
         ]);
-    }
-
-    private function dummyWastePrices(): array
-    {
-        return [
-            ['id' => 1, 'updatedAt' => '14 April 2026', 'name' => 'Botol Plastik', 'unit' => 'kg', 'price' => 8500],
-            ['id' => 2, 'updatedAt' => '10 Agu 2026', 'name' => 'Kertas Karton', 'unit' => 'kg', 'price' => 7000],
-            ['id' => 3, 'updatedAt' => '21 Mei 2026', 'name' => 'Kaleng Logam', 'unit' => 'kg', 'price' => 12000],
-            ['id' => 4, 'updatedAt' => '12 Jan 2026', 'name' => 'Kardus', 'unit' => 'kg', 'price' => 10000],
-            ['id' => 5, 'updatedAt' => '5 Feb 2026', 'name' => 'Kantong Plastik', 'unit' => 'kg', 'price' => 6500],
-            ['id' => 6, 'updatedAt' => '2 Agu 2026', 'name' => 'Bekas Logam', 'unit' => 'kg', 'price' => 15000],
-            ['id' => 7, 'updatedAt' => '13 Juli 2026', 'name' => 'Tisu', 'unit' => 'kg', 'price' => 6000],
-        ];
-    }
-
-    private function dummyPendingWithdrawals(): array
-    {
-        return [
-            [
-                'id' => 1,
-                'class' => 'XII TKJ 1',
-                'submittedAt' => '18 Agu 2026',
-                'amount' => 'Rp 200.000',
-                'purpose' => 'Pembelian alat kebersihan',
-                'neededAt' => '20 Agu 2026',
-                'note' => 'Sapu, pel, dan tempat sampah baru untuk ruang kelas.',
-            ],
-            [
-                'id' => 2,
-                'class' => 'Kelas 8A',
-                'submittedAt' => '17 Agu 2026',
-                'amount' => 'Rp 100.000',
-                'purpose' => 'Dana kegiatan kelas',
-                'neededAt' => '19 Agu 2026',
-                'note' => 'Konsumsi rapat wali kelas bulanan.',
-            ],
-        ];
-    }
-
-    private function formatIndonesianDate(\DateTimeInterface $date): string
-    {
-        $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        $months = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
-        ];
-
-        return sprintf(
-            '%s, %d %s %d',
-            $days[(int) $date->format('w')],
-            (int) $date->format('j'),
-            $months[(int) $date->format('n')],
-            (int) $date->format('Y')
-        );
     }
 }
