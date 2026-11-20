@@ -9,7 +9,16 @@
 </head>
 <body class="min-h-screen bg-[#eef2ec] text-gray-800">
 
-<div class="max-w-5xl mx-auto px-4 py-8" x-data="{ activeTab: 'Semua' }">
+<div class="max-w-5xl mx-auto px-4 py-8"
+     x-data="{
+         activeTab: 'Semua',
+         redeemed: JSON.parse(localStorage.getItem('ecopass_redeemed_{{ $classroom?->id ?? 0 }}') || '{}'),
+         redeem(id) {
+             alert('Silahkan ambil hadiah penukaran EcoPass di ruang TU besok.');
+             this.redeemed[id] = true;
+             localStorage.setItem('ecopass_redeemed_{{ $classroom?->id ?? 0 }}', JSON.stringify(this.redeemed));
+         }
+     }">
 
     {{-- Back Arrow --}}
     <a href="{{ route('student.dashboard') }}" class="inline-flex items-center mb-6">
@@ -29,11 +38,14 @@
         @php $remaining = max(0, 1200 - $points); @endphp
         <div class="flex flex-col sm:flex-row gap-4 items-start mb-6">
             <div>
-                <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-0.5">Poin Kelas Tersedia</p>
+                <div class="flex items-center gap-2 mb-0.5">
+                    <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Poin Kelas Tersedia</p>
+                    <span class="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">{{ $classroom?->name ?? 'Belum ada kelas' }}</span>
+                </div>
                 <p class="text-5xl font-extrabold text-slate-900 leading-none">
                     {{ number_format($points) }} <span class="text-2xl font-semibold">pts</span>
                 </p>
-                <p class="text-xs font-semibold text-emerald-600 mt-1">Peringkat 1 bulan ini</p>
+                <p class="text-xs font-semibold text-emerald-600 mt-1">Peringkat {{ $rank ?? 1 }} bulan ini</p>
             </div>
 
             <div class="flex-1 rounded-xl bg-[#f0f7f0] border border-emerald-100 px-5 py-4 text-sm text-slate-700 leading-snug">
@@ -93,10 +105,18 @@
                             {{ $points >= 300 ? 'Cukup' : 'Kurang '.(300 - $points).' pts' }}
                         </span>
                     </div>
-                    <button class="mt-3 w-full rounded-lg py-2 text-sm font-semibold transition
-                        {{ $points >= 300 ? 'bg-emerald-700 hover:bg-emerald-800 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed' }}"
-                        {{ $points < 300 ? 'disabled' : '' }}>
-                        {{ $points >= 300 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}
+                    <button
+                        @click="redeem('tanaman')"
+                        class="mt-3 w-full rounded-lg py-2 text-sm font-semibold transition"
+                        :class="redeemed['tanaman']
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            : ({{ $points >= 300 ? 'true' : 'false' }}
+                                ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed')"
+                        :disabled="redeemed['tanaman'] || {{ $points < 300 ? 'true' : 'false' }}">
+                        <span x-text="redeemed['tanaman'] ? 'Hadiah sudah ditukarkan' : '{{ $points >= 300 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}'">
+                            {{ $points >= 300 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}
+                        </span>
                     </button>
                 </div>
             </div>
@@ -117,10 +137,18 @@
                             {{ $points >= 600 ? 'Cukup' : 'Kurang '.(600 - $points).' pts' }}
                         </span>
                     </div>
-                    <button class="mt-3 w-full rounded-lg py-2 text-sm font-semibold transition
-                        {{ $points >= 600 ? 'bg-emerald-700 hover:bg-emerald-800 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed' }}"
-                        {{ $points < 600 ? 'disabled' : '' }}>
-                        {{ $points >= 600 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}
+                    <button
+                        @click="redeem('fasilitas')"
+                        class="mt-3 w-full rounded-lg py-2 text-sm font-semibold transition"
+                        :class="redeemed['fasilitas']
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            : ({{ $points >= 600 ? 'true' : 'false' }}
+                                ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed')"
+                        :disabled="redeemed['fasilitas'] || {{ $points < 600 ? 'true' : 'false' }}">
+                        <span x-text="redeemed['fasilitas'] ? 'Hadiah sudah ditukarkan' : '{{ $points >= 600 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}'">
+                            {{ $points >= 600 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}
+                        </span>
                     </button>
                 </div>
             </div>
@@ -141,10 +169,18 @@
                             {{ $points >= 400 ? 'Cukup' : 'Kurang '.(400 - $points).' pts' }}
                         </span>
                     </div>
-                    <button class="mt-3 w-full rounded-lg py-2 text-sm font-semibold transition
-                        {{ $points >= 400 ? 'bg-emerald-700 hover:bg-emerald-800 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed' }}"
-                        {{ $points < 400 ? 'disabled' : '' }}>
-                        {{ $points >= 400 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}
+                    <button
+                        @click="redeem('voucher')"
+                        class="mt-3 w-full rounded-lg py-2 text-sm font-semibold transition"
+                        :class="redeemed['voucher']
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            : ({{ $points >= 400 ? 'true' : 'false' }}
+                                ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed')"
+                        :disabled="redeemed['voucher'] || {{ $points < 400 ? 'true' : 'false' }}">
+                        <span x-text="redeemed['voucher'] ? 'Hadiah sudah ditukarkan' : '{{ $points >= 400 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}'">
+                            {{ $points >= 400 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}
+                        </span>
                     </button>
                 </div>
             </div>
@@ -165,10 +201,18 @@
                             {{ $points >= 1200 ? 'Cukup' : 'Kurang '.(1200 - $points).' pts' }}
                         </span>
                     </div>
-                    <button class="mt-3 w-full rounded-lg py-2 text-sm font-semibold transition
-                        {{ $points >= 1200 ? 'bg-emerald-700 hover:bg-emerald-800 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed' }}"
-                        {{ $points < 1200 ? 'disabled' : '' }}>
-                        {{ $points >= 1200 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}
+                    <button
+                        @click="redeem('penghargaan')"
+                        class="mt-3 w-full rounded-lg py-2 text-sm font-semibold transition"
+                        :class="redeemed['penghargaan']
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            : ({{ $points >= 1200 ? 'true' : 'false' }}
+                                ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed')"
+                        :disabled="redeemed['penghargaan'] || {{ $points < 1200 ? 'true' : 'false' }}">
+                        <span x-text="redeemed['penghargaan'] ? 'Hadiah sudah ditukarkan' : '{{ $points >= 1200 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}'">
+                            {{ $points >= 1200 ? 'Tukar Sekarang' : 'Poin Belum Cukup' }}
+                        </span>
                     </button>
                 </div>
             </div>

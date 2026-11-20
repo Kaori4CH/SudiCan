@@ -32,13 +32,15 @@ class AuthController extends Controller
             /** @var User $user */
             $user = Auth::user();
 
-            $this->ensureStudentRegistered($user);
+            if ($user->isStudent()) {
+                $this->ensureStudentRegistered($user);
+            }
 
-            if ($user->role === 'teacher' || $user->role === 'admin') {
+            if ($user->canAccessTeacherArea()) {
                 return redirect()->intended(route('teachers.index'));
             }
 
-            return redirect()->intended(route('student.dashboard'));
+            return redirect()->route('student.select-class');
         }
 
         return back()->withErrors([

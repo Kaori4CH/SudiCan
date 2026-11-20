@@ -30,6 +30,11 @@
                                 @endif
                             </p>
                         </div>
+                        <a href="{{ route('student.select-class') }}" title="Ganti Kelas" class="text-emerald-600 hover:text-emerald-800 transition p-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </a>
                     </div>
                 @endauth
 

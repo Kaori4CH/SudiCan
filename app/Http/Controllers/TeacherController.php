@@ -10,6 +10,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class TeacherController extends Controller
 {
@@ -133,7 +135,7 @@ class TeacherController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:50', 'unique:classrooms,name'],
+            'name' => ['required', 'string', 'max:50', Rule::unique('classrooms', 'name')],
             'homeroom_teacher' => ['required', 'string', 'max:100'],
             'members' => ['required', 'integer', 'min:1'],
         ]);
@@ -152,14 +154,23 @@ class TeacherController extends Controller
     {
         $title = 'SudiCan - Waste Deposit';
 
-        $classes = Classroom::orderBy('name')->pluck('name')->all();
+        $classrooms = Classroom::orderByRaw("
+            CASE 
+                WHEN name LIKE 'X %' THEN 1 
+                WHEN name LIKE 'XI %' THEN 2 
+                WHEN name LIKE 'XII %' THEN 3 
+                ELSE 4 
+            END, name
+        ")->get();
+
+        $classes = $classrooms->pluck('name')->all();
 
         $wastePrices = WastePrice::all()->map(fn ($wp) => [
             'name' => $wp->name,
             'price' => (int) $wp->price,
         ])->all();
 
-        $history = WasteDeposit::with('classroom')->latest()->take(10)->get()->map(fn ($d) => [
+        $history = WasteDeposit::with('classroom')->latest()->take(15)->get()->map(fn ($d) => [
             'time' => $d->created_at ? $d->created_at->translatedFormat('d M · H:i') : '-',
             'class' => $d->classroom?->name ?? '-',
             'type' => $d->waste_type,
@@ -168,16 +179,19 @@ class TeacherController extends Controller
             'points' => (int) $d->points,
         ])->all();
 
-        $selectedClass = $classes[0] ?? 'Kelas Belum Terdaftar';
+        $selectedClassId = session('last_deposited_class_id') ?? $classrooms->first()?->id;
+        $selectedClass = $classrooms->firstWhere('id', $selectedClassId)?->name ?? ($classes[0] ?? 'Kelas Belum Terdaftar');
         $selectedWaste = $wastePrices[0]['name'] ?? 'Botol Plastik';
         $unitPrice = $wastePrices[0]['price'] ?? 3000;
         $defaultWeight = 1.0;
 
         return view('teachers.waste-deposit', [
             'title' => $title,
+            'classrooms' => $classrooms,
             'classes' => $classes,
             'wasteTypes' => $wastePrices,
             'history' => $history,
+            'selectedClassId' => $selectedClassId,
             'selectedClass' => $selectedClass,
             'selectedWaste' => $selectedWaste,
             'weight' => $defaultWeight,
@@ -189,34 +203,51 @@ class TeacherController extends Controller
     public function storeWasteDeposit(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'class' => ['required', 'string'],
+            'classroom_id' => ['nullable', 'integer', 'exists:classrooms,id'],
+            'class' => ['nullable', 'string'],
             'waste_type' => ['required', 'string'],
             'weight' => ['required', 'numeric', 'min:0.1'],
-            'note' => ['nullable', 'string'],
+            'note' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $classroom = Classroom::where('name', $validated['class'])->firstOrFail();
+        $classroom = null;
+        if (! empty($validated['classroom_id'])) {
+            $classroom = Classroom::find($validated['classroom_id']);
+        }
+        if (! $classroom && ! empty($validated['class'])) {
+            $classroom = Classroom::findByNameOrAlias($validated['class'])
+                ?? Classroom::where('name', $validated['class'])->first();
+        }
+
+        if (! $classroom) {
+            return back()->withErrors(['classroom_id' => 'Kelas penyetor wajib dipilih dan harus valid.'])->withInput();
+        }
+
         $wastePrice = WastePrice::where('name', $validated['waste_type'])->first();
 
         $unitPrice = $wastePrice ? (float) $wastePrice->price : 3000;
         $value = round($validated['weight'] * $unitPrice);
         $points = (int) round($validated['weight'] * 10);
 
-        $classroom->wasteDeposits()->create([
-            'waste_price_id' => $wastePrice?->id,
-            'waste_type' => $validated['waste_type'],
-            'weight' => $validated['weight'],
-            'value' => $value,
-            'points' => $points,
-            'validator_id' => Auth::id(),
-            'validator_name' => Auth::user()?->name ?? 'Admin SudiCan',
-            'deposit_date' => now(),
-            'note' => $validated['note'] ?? null,
-        ]);
+        DB::transaction(function () use ($classroom, $wastePrice, $validated, $value, $points) {
+            $classroom->wasteDeposits()->create([
+                'waste_price_id' => $wastePrice?->id,
+                'waste_type' => $validated['waste_type'],
+                'weight' => $validated['weight'],
+                'value' => $value,
+                'points' => $points,
+                'validator_id' => Auth::id(),
+                'validator_name' => Auth::user()?->name ?? 'Admin SudiCan',
+                'deposit_date' => now(),
+                'note' => $validated['note'] ?? null,
+            ]);
 
-        $classroom->increment('points', $points);
+            $classroom->increment('points', $points);
+        });
 
-        return redirect()->route('teachers.waste-deposit')->with('success', 'Setoran berhasil dicatat.');
+        session()->flash('last_deposited_class_id', $classroom->id);
+
+        return redirect()->route('teachers.waste-deposit')->with('success', "Setoran sampah untuk kelas {$classroom->name} berhasil dicatat (+{$points} pts).");
     }
 
     public function cashReport(): View
@@ -259,21 +290,32 @@ class TeacherController extends Controller
             ],
         ];
 
+        $classBalances = [];
         $pending = CashWithdrawal::with(['classroom', 'user'])
             ->pending()
             ->latest()
             ->get()
-            ->map(fn ($w) => [
-                'id' => $w->id,
-                'class' => $w->classroom?->name ?? 'Kelas tidak diketahui',
-                'requester' => $w->user?->name ?? 'Pengurus Kelas',
-                'classBalance' => $w->classroom ? 'Rp '.number_format($w->classroom->availableBalance(), 0, ',', '.') : '-',
-                'submittedAt' => $w->created_at ? $w->created_at->translatedFormat('d M Y · H:i') : '-',
-                'amount' => 'Rp '.number_format($w->amount, 0, ',', '.'),
-                'purpose' => $w->purpose,
-                'neededAt' => $w->needed_at ? $w->needed_at->translatedFormat('d M Y') : '-',
-                'note' => $w->note ?? '-',
-            ])->all();
+            ->map(function ($w) use (&$classBalances) {
+                $classId = $w->classroom_id;
+                if ($classId && ! isset($classBalances[$classId])) {
+                    $classBalances[$classId] = $w->classroom ? $w->classroom->availableBalance() : 0;
+                }
+                $balanceStr = $classId && isset($classBalances[$classId])
+                    ? 'Rp '.number_format($classBalances[$classId], 0, ',', '.')
+                    : '-';
+
+                return [
+                    'id' => $w->id,
+                    'class' => $w->classroom?->name ?? 'Kelas tidak diketahui',
+                    'requester' => $w->user?->name ?? 'Pengurus Kelas',
+                    'classBalance' => $balanceStr,
+                    'submittedAt' => $w->created_at ? $w->created_at->translatedFormat('d M Y · H:i') : '-',
+                    'amount' => 'Rp '.number_format($w->amount, 0, ',', '.'),
+                    'purpose' => $w->purpose,
+                    'neededAt' => $w->needed_at ? $w->needed_at->translatedFormat('d M Y') : '-',
+                    'note' => $w->note ?? '-',
+                ];
+            })->all();
 
         $history = CashWithdrawal::with(['classroom', 'user', 'approver'])
             ->whereIn('status', ['approved', 'rejected'])
@@ -301,7 +343,16 @@ class TeacherController extends Controller
 
     public function approveWithdrawal(string $id): RedirectResponse
     {
-        $withdrawal = CashWithdrawal::findOrFail($id);
+        $withdrawal = CashWithdrawal::with('classroom')->findOrFail($id);
+
+        if ($withdrawal->status !== 'pending') {
+            return redirect()->route('teachers.cash-report')->with('error', "Pengajuan #{$id} sudah diproses sebelumnya.");
+        }
+
+        if ($withdrawal->classroom && (float) $withdrawal->amount > $withdrawal->classroom->availableBalance()) {
+            return redirect()->route('teachers.cash-report')->with('error', "Saldo kas kelas {$withdrawal->classroom->name} tidak mencukupi untuk pencairan pengajuan #{$id}.");
+        }
+
         $withdrawal->approve(Auth::id());
 
         return redirect()->route('teachers.cash-report')->with('success', "Pengajuan #{$id} disetujui dan dicairkan.");
@@ -310,6 +361,11 @@ class TeacherController extends Controller
     public function rejectWithdrawal(string $id): RedirectResponse
     {
         $withdrawal = CashWithdrawal::findOrFail($id);
+
+        if ($withdrawal->status !== 'pending') {
+            return redirect()->route('teachers.cash-report')->with('error', "Pengajuan #{$id} sudah diproses sebelumnya.");
+        }
+
         $withdrawal->reject();
 
         return redirect()->route('teachers.cash-report')->with('success', "Pengajuan #{$id} ditolak.");
@@ -330,7 +386,7 @@ class TeacherController extends Controller
         $classroom = Classroom::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:50', 'unique:classrooms,name,'.$classroom->id],
+            'name' => ['required', 'string', 'max:50', Rule::unique('classrooms', 'name')->ignore($classroom->id)],
             'homeroom_teacher' => ['required', 'string', 'max:100'],
             'members' => ['required', 'integer', 'min:1'],
         ]);
@@ -368,7 +424,7 @@ class TeacherController extends Controller
     public function wastePricesStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100', 'unique:waste_prices,name'],
             'unit' => ['required', 'string', 'max:20'],
             'price' => ['required', 'numeric', 'min:0'],
         ]);
@@ -395,7 +451,7 @@ class TeacherController extends Controller
         $wastePrice = WastePrice::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100', Rule::unique('waste_prices', 'name')->ignore($wastePrice->id)],
             'unit' => ['required', 'string', 'max:20'],
             'price' => ['required', 'numeric', 'min:0'],
         ]);

@@ -27,6 +27,10 @@ class WasteDeposit extends Model
     protected function casts(): array
     {
         return [
+            'classroom_id' => 'integer',
+            'student_id' => 'integer',
+            'waste_price_id' => 'integer',
+            'validator_id' => 'integer',
             'weight' => 'decimal:2',
             'value' => 'decimal:2',
             'points' => 'integer',

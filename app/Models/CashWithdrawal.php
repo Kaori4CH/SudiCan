@@ -27,6 +27,10 @@ class CashWithdrawal extends Model
     protected function casts(): array
     {
         return [
+            'classroom_id' => 'integer',
+            'user_id' => 'integer',
+            'student_id' => 'integer',
+            'approved_by' => 'integer',
             'amount' => 'decimal:2',
             'needed_at' => 'date',
             'approved_at' => 'datetime',
