@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Teacher;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -15,7 +14,7 @@ class TeachersSeeder extends Seeder
      */
     public function run(): void
     {
-         $adminUser = User::firstOrCreate(
+        $adminUser = User::firstOrCreate(
             ['email' => 'admin@sudican.test'],
             [
                 'name' => 'Admin SudiCan',
@@ -24,10 +23,11 @@ class TeachersSeeder extends Seeder
                 'classroom_id' => null,
             ]
         );
-          Teacher::updateOrCreate(
+
+        Teacher::updateOrCreate(
             ['nip' => '198501152010012001'],
             [
-                'name' => 'Charless',
+                'name' => 'Charles',
                 'user_id' => $adminUser->id,
                 'gender' => 'Laki-laki',
                 'subject' => 'Teknik Komputer & Jaringan',

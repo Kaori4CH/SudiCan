@@ -25,6 +25,12 @@ class Classroom extends Model
         ];
     }
 
+    protected ?float $cachedTotalWaste = null;
+
+    protected ?float $cachedTotalIncome = null;
+
+    protected ?float $cachedTotalApprovedWithdrawal = null;
+
     public function students(): HasMany
     {
         return $this->hasMany(Student::class);
@@ -47,22 +53,71 @@ class Classroom extends Model
 
     public function totalWaste(): float
     {
-        return (float) $this->wasteDeposits()->sum('weight');
+        return $this->cachedTotalWaste ??= (float) $this->wasteDeposits()->sum('weight');
     }
 
     public function totalIncome(): float
     {
-        return (float) $this->wasteDeposits()->sum('value');
+        return $this->cachedTotalIncome ??= (float) $this->wasteDeposits()->sum('value');
     }
 
     public function totalApprovedWithdrawal(): float
     {
-        return (float) $this->cashWithdrawals()->approved()->sum('amount');
+        return $this->cachedTotalApprovedWithdrawal ??= (float) $this->cashWithdrawals()->approved()->sum('amount');
     }
 
     public function availableBalance(): float
     {
         return max(0, $this->totalIncome() - $this->totalApprovedWithdrawal());
+    }
+
+    public static function findByNameOrAlias(string $name): ?self
+    {
+        $classroom = self::where('name', $name)->first();
+        if ($classroom) {
+            return $classroom;
+        }
+
+        $romanToArabic = [
+            '/^X\s+/i' => '10 ',
+            '/^XI\s+/i' => '11 ',
+            '/^XII\s+/i' => '12 ',
+        ];
+        $arabicToRoman = [
+            '/^10\s+/' => 'X ',
+            '/^11\s+/' => 'XI ',
+            '/^12\s+/' => 'XII ',
+        ];
+
+        foreach ($arabicToRoman as $pattern => $replacement) {
+            if (preg_match($pattern, $name)) {
+                $alias = preg_replace($pattern, $replacement, $name);
+                $found = self::where('name', $alias)->first()
+                    ?? self::where('name', 'like', $alias.'%')->first();
+                if ($found) {
+                    return $found;
+                }
+            }
+        }
+
+        foreach ($romanToArabic as $pattern => $replacement) {
+            if (preg_match($pattern, $name)) {
+                $alias = preg_replace($pattern, $replacement, $name);
+                $found = self::where('name', $alias)->first()
+                    ?? self::where('name', 'like', $alias.'%')->first();
+                if ($found) {
+                    return $found;
+                }
+            }
+        }
+
+        $clean = preg_replace('/\s+/', '', strtolower($name));
+
+        return self::all()->first(function ($c) use ($clean) {
+            $classClean = preg_replace('/\s+/', '', strtolower($c->name));
+
+            return $classClean === $clean || str_starts_with($classClean, $clean);
+        });
     }
 
     public function getTotalWasteAttribute(): string

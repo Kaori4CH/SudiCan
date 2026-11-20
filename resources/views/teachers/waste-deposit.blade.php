@@ -9,10 +9,6 @@
             <h1 class="text-2xl font-bold text-slate-800">Waste Deposit — Input Transaksi</h1>
             <p class="mt-1 text-sm text-slate-500">Catat setoran sampah dari kelas penyetor secara langsung</p>
         </div>
-        <span class="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-700">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            Mode Eksekutor
-        </span>
     </div>
 
     @if (session('success'))
@@ -46,9 +42,9 @@
 
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-slate-700">Kelas Penyetor</label>
-                <select name="class" class="w-full rounded-lg border border-[#DDE7DD] bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                    @foreach ($classes as $class)
-                        <option value="{{ $class }}" @selected($class === $selectedClass)>{{ $class }}</option>
+                <select name="classroom_id" class="w-full rounded-lg border border-[#DDE7DD] bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    @foreach ($classrooms as $c)
+                        <option value="{{ $c->id }}" @selected($c->id == old('classroom_id', $selectedClassId))>{{ $c->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -95,16 +91,16 @@
         </form>
     </div>
 
-    <div class="rounded-xl border border-[#E4EFE4] bg-white p-6">
+    <div class="rounded-xl border border-[#E4EFE4] bg-white p-6" x-data="{ filterClass: 'Semua Kelas' }">
         <div class="mb-4 flex items-center justify-between">
             <div>
                 <h2 class="text-base font-semibold text-slate-800">Riwayat Setoran</h2>
                 <p class="text-sm text-slate-400">{{ count($history) }} setoran tercatat</p>
             </div>
-            <select class="rounded-lg border border-[#DDE7DD] bg-white px-3 py-2 text-sm text-slate-600 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                <option>Semua Kelas</option>
+            <select x-model="filterClass" class="rounded-lg border border-[#DDE7DD] bg-white px-3 py-2 text-sm text-slate-600 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <option value="Semua Kelas">Semua Kelas</option>
                 @foreach ($classes as $class)
-                    <option>{{ $class }}</option>
+                    <option value="{{ $class }}">{{ $class }}</option>
                 @endforeach
             </select>
         </div>
@@ -123,7 +119,7 @@
                 </thead>
                 <tbody>
                     @foreach ($history as $row)
-                        <tr class="border-b border-[#F2F6F1] last:border-0">
+                        <tr x-show="filterClass === 'Semua Kelas' || filterClass === '{{ $row['class'] }}'" class="border-b border-[#F2F6F1] last:border-0">
                             <td class="py-3.5 pr-4 text-slate-500">{{ $row['time'] }}</td>
                             <td class="py-3.5 pr-4 font-medium text-slate-800">{{ $row['class'] }}</td>
                             <td class="py-3.5 pr-4 text-slate-600">{{ $row['type'] }}</td>
@@ -132,6 +128,11 @@
                             <td class="py-3.5 pl-4 text-right text-slate-500">{{ $row['points'] }} pts</td>
                         </tr>
                     @endforeach
+                    <tr x-show="filterClass !== 'Semua Kelas' && !{{ json_encode(collect($history)->pluck('class')->unique()->values()->all()) }}.includes(filterClass)">
+                        <td colspan="6" class="py-8 text-center text-sm text-slate-400">
+                            Belum ada riwayat setoran untuk kelas ini.
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
+use App\Models\Student;
+use App\Models\User;
 use App\Models\WasteDeposit;
 use App\Models\WastePrice;
 use Illuminate\Contracts\View\View;
@@ -12,6 +14,96 @@ use Illuminate\Support\Facades\Auth;
 
 class StudentController extends Controller
 {
+    public function selectClass(): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $classes = [
+            ['10 TKJ 1', '10 TKJ 2', '10 TKJ 3', '10 AKL', '10 BID'],
+            ['11 TKJ 1', '11 TKJ 2', '11 TKJ 3', '11 AKL', '11 BID'],
+            ['12 TKJ 1', '12 TKJ 2', '12 TKJ 3', '12 AKL', '12 BID'],
+        ];
+
+        $currentName = $user->student?->class ?? ($user->classroom?->name ?? '10 TKJ 1');
+        $romanToArabic = [
+            '/^X\s+/i' => '10 ',
+            '/^XI\s+/i' => '11 ',
+            '/^XII\s+/i' => '12 ',
+        ];
+        foreach ($romanToArabic as $pattern => $rep) {
+            $currentName = preg_replace($pattern, $rep, $currentName);
+        }
+
+        return view('student.select-class', [
+            'user' => $user,
+            'classes' => $classes,
+            'currentClass' => $currentName,
+        ]);
+    }
+
+    public function storeClassSelection(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'class' => ['required', 'string', 'max:50'],
+            'name' => ['required', 'string', 'max:100'],
+            'nis' => ['required', 'string', 'max:50'],
+        ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        // Convert Arabic numerals to Roman numerals (e.g. 12 TKJ 3 -> XII TKJ 3)
+        $normalizedName = $validated['class'];
+        $arabicToRoman = [
+            '/^10\s+/' => 'X ',
+            '/^11\s+/' => 'XI ',
+            '/^12\s+/' => 'XII ',
+        ];
+        foreach ($arabicToRoman as $pattern => $replacement) {
+            if (preg_match($pattern, $normalizedName)) {
+                $normalizedName = preg_replace($pattern, $replacement, $normalizedName);
+                break;
+            }
+        }
+
+        $classroom = Classroom::findByNameOrAlias($normalizedName)
+            ?? Classroom::findByNameOrAlias($validated['class']);
+
+        if (! $classroom) {
+            $classroom = Classroom::firstOrCreate(
+                ['name' => $normalizedName],
+                [
+                    'homeroom_teacher' => 'Charles',
+                    'members' => 32,
+                    'points' => 0,
+                ]
+            );
+        }
+
+        $parts = explode(' ', $classroom->name);
+        $major = count($parts) >= 2 ? $parts[1] : 'Umum';
+
+        $user->update([
+            'name' => $validated['name'],
+            'classroom_id' => $classroom->id,
+        ]);
+
+        Student::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'classroom_id' => $classroom->id,
+                'nis' => $validated['nis'],
+                'name' => $validated['name'],
+                'gender' => $user->student?->gender ?? 'Laki-laki',
+                'class' => $classroom->name,
+                'major' => $major,
+            ]
+        );
+
+        return redirect()->route('student.dashboard')->with('success', "Kelas berhasil dipilih! Anda terdaftar sebagai pengurus {$classroom->name}.");
+    }
+
     protected function resolveClassroom(): ?Classroom
     {
         $user = Auth::user();
@@ -65,7 +157,7 @@ class StudentController extends Controller
         $trendLabels = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
         $trendData = [];
         for ($i = 3; $i >= 0; $i--) {
-            $start = now()->subWeeks($i + 1)->startOfWeek();
+            $start = now()->subWeeks($i)->startOfWeek();
             $end = now()->subWeeks($i)->endOfWeek();
             $query = $classroom ? $classroom->wasteDeposits() : WasteDeposit::query();
             $trendData[] = round((float) $query->whereBetween('created_at', [$start, $end])->sum('weight'), 1);
@@ -205,10 +297,14 @@ class StudentController extends Controller
     {
         $classroom = $this->resolveClassroom();
         $points = $classroom ? (int) $classroom->points : 0;
+        $rank = $classroom
+            ? Classroom::where('points', '>', $classroom->points)->count() + 1
+            : 1;
 
         return view('student.greenrewards', [
             'points' => $points,
             'classroom' => $classroom,
+            'rank' => $rank,
         ]);
     }
 
@@ -232,7 +328,9 @@ class StudentController extends Controller
             'needed_at' => ['nullable', 'date'],
         ]);
 
-        $classroom = $this->resolveClassroom();
+        /** @var User|null $user */
+        $user = Auth::user();
+        $classroom = $user?->classroom ?? ($user?->classroom_id ? Classroom::find($user->classroom_id) : $this->resolveClassroom());
         if (! $classroom) {
             return back()->withErrors(['amount' => 'Akun Anda belum terikat dengan kelas manapun.'])->withInput();
         }
@@ -242,7 +340,8 @@ class StudentController extends Controller
         }
 
         $classroom->cashWithdrawals()->create([
-            'user_id' => Auth::id(),
+            'user_id' => $user->id,
+            'student_id' => $user->student?->id,
             'amount' => $validated['amount'],
             'purpose' => $validated['purpose'],
             'needed_at' => $validated['needed_at'] ?? null,

@@ -4,8 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\CashWithdrawal;
 use App\Models\Classroom;
-use App\Models\Student;
-use App\Models\Teacher;
 use App\Models\User;
 use App\Models\WasteDeposit;
 use App\Models\WastePrice;
@@ -20,19 +18,22 @@ class DatabaseSeeder extends Seeder
         CashWithdrawal::truncate();
 
         $targetClasses = [
-            ['name' => 'X AKL', 'homeroom_teacher' => 'Charles', 'members' => 34, 'points' => 0],
-            ['name' => 'X BiD 1', 'homeroom_teacher' => 'Charles', 'members' => 32, 'points' => 0],
-            ['name' => 'X BiD 2', 'homeroom_teacher' => 'Charles', 'members' => 32, 'points' => 0],
             ['name' => 'X TKJ 1', 'homeroom_teacher' => 'Charles', 'members' => 36, 'points' => 0],
             ['name' => 'X TKJ 2', 'homeroom_teacher' => 'Charles', 'members' => 35, 'points' => 0],
-            ['name' => 'XI AKL', 'homeroom_teacher' => 'Charles', 'members' => 34, 'points' => 0],
-            ['name' => 'XI BiD', 'homeroom_teacher' => 'Charles', 'members' => 30, 'points' => 0],
+            ['name' => 'X TKJ 3', 'homeroom_teacher' => 'Charles', 'members' => 34, 'points' => 0],
+            ['name' => 'X AKL', 'homeroom_teacher' => 'Charles', 'members' => 34, 'points' => 0],
+            ['name' => 'X BiD 1', 'homeroom_teacher' => 'Charles', 'members' => 30, 'points' => 0],
+            ['name' => 'X BiD 2', 'homeroom_teacher' => 'Charles', 'members' => 30, 'points' => 0],
             ['name' => 'XI TKJ 1', 'homeroom_teacher' => 'Charles', 'members' => 36, 'points' => 0],
             ['name' => 'XI TKJ 2', 'homeroom_teacher' => 'Charles', 'members' => 35, 'points' => 0],
-            ['name' => 'XII AKL', 'homeroom_teacher' => 'Charles', 'members' => 32, 'points' => 0],
-            ['name' => 'XII BiD', 'homeroom_teacher' => 'Charles', 'members' => 28, 'points' => 0],
+            ['name' => 'XI TKJ 3', 'homeroom_teacher' => 'Charles', 'members' => 34, 'points' => 0],
+            ['name' => 'XI AKL', 'homeroom_teacher' => 'Charles', 'members' => 34, 'points' => 0],
+            ['name' => 'XI BiD', 'homeroom_teacher' => 'Charles', 'members' => 30, 'points' => 0],
             ['name' => 'XII TKJ 1', 'homeroom_teacher' => 'Charles', 'members' => 32, 'points' => 0],
             ['name' => 'XII TKJ 2', 'homeroom_teacher' => 'Charles', 'members' => 30, 'points' => 0],
+            ['name' => 'XII TKJ 3', 'homeroom_teacher' => 'Charles', 'members' => 30, 'points' => 0],
+            ['name' => 'XII AKL', 'homeroom_teacher' => 'Charles', 'members' => 32, 'points' => 0],
+            ['name' => 'XII BiD', 'homeroom_teacher' => 'Charles', 'members' => 28, 'points' => 0],
         ];
 
         $targetNames = array_column($targetClasses, 'name');
@@ -50,7 +51,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        $defaultClass = Classroom::where('name', 'XII TKJ 1')->first();
+        $defaultClass = Classroom::where('name', '12 TKJ 1')->orWhere('name', 'XII TKJ 1')->first();
 
         $adminUser = User::firstOrCreate(
             ['email' => 'admin@sudican.test'],
@@ -76,26 +77,10 @@ class DatabaseSeeder extends Seeder
             $studentUser->update(['classroom_id' => $defaultClass->id]);
         }
 
-        Teacher::updateOrCreate(
-            ['nip' => '198501152010012001'],
-            [
-                'name' => 'Charles',
-                'user_id' => $adminUser->id,
-                'gender' => 'Laki-laki',
-                'subject' => 'Teknik Komputer & Jaringan',
-                'phone' => '081234567890',
-            ]
-        );
-
-        $students = [
-            ['nis' => '1001', 'name' => 'Richard', 'gender' => 'Laki-laki', 'class' => 'XII TKJ 1', 'major' => 'TKJ', 'classroom_id' => $defaultClass?->id],
-            ['nis' => '1002', 'name' => 'Budi', 'gender' => 'Laki-laki', 'class' => 'XII AKL', 'major' => 'AKL', 'classroom_id' => Classroom::where('name', 'XII AKL')->value('id')],
-            ['nis' => '1003', 'name' => 'Nina', 'gender' => 'Perempuan', 'class' => 'XII BiD', 'major' => 'BID', 'classroom_id' => Classroom::where('name', 'XII BiD')->value('id')],
-        ];
-
-        foreach ($students as $s) {
-            Student::updateOrCreate(['nis' => $s['nis']], $s);
-        }
+        $this->call([
+            TeachersSeeder::class,
+            StudentSeeder::class,
+        ]);
 
         $wastePrices = [
             ['name' => 'Botol Plastik', 'unit' => 'kg', 'price' => 3000],

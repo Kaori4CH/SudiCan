@@ -178,7 +178,7 @@ test('teacher login redirects directly to teacher dashboard and student login to
     $this->post(route('auth.authenticate'), [
         'username' => 'siswa@sudican.test',
         'password' => 'password123',
-    ])->assertRedirect(route('student.dashboard'));
+    ])->assertRedirect(route('student.select-class'));
 });
 
 test('student cannot access teacher area and is redirected to student dashboard', function () {
@@ -244,7 +244,7 @@ test('user login automatically registers user in students table', function () {
     $this->post(route('auth.authenticate'), [
         'username' => 'budisantoso@sudican.test',
         'password' => 'password123',
-    ])->assertRedirect(route('student.dashboard'));
+    ])->assertRedirect(route('student.select-class'));
 
     expect(Student::where('user_id', $user->id)->exists())->toBeTrue();
     $student = Student::where('user_id', $user->id)->first();
@@ -275,4 +275,176 @@ test('logout logs out user and redirects to login with success flash', function 
         ->assertSessionHas('success');
 
     $this->assertGuest();
+});
+
+test('teacher login does not create a student record in students table', function () {
+    $teacher = User::create([
+        'name' => 'Guru Murni',
+        'email' => 'gurumurni@sudican.test',
+        'password' => bcrypt('password123'),
+        'role' => 'teacher',
+    ]);
+
+    $this->post(route('auth.authenticate'), [
+        'username' => 'gurumurni@sudican.test',
+        'password' => 'password123',
+    ])->assertRedirect(route('teachers.index'));
+
+    expect(Student::where('user_id', $teacher->id)->exists())->toBeFalse();
+});
+
+test('teacher cannot approve withdrawal when classroom balance is insufficient or already processed', function () {
+    $teacher = User::create([
+        'name' => 'Guru Validasi',
+        'email' => 'guruvalidasi@sudican.test',
+        'password' => bcrypt('password123'),
+        'role' => 'teacher',
+    ]);
+
+    $classroom = Classroom::create([
+        'name' => 'XI AKL',
+        'homeroom_teacher' => 'Charles',
+        'members' => 30,
+        'points' => 0,
+    ]);
+
+    $withdrawal = CashWithdrawal::create([
+        'classroom_id' => $classroom->id,
+        'user_id' => $teacher->id,
+        'amount' => 50000,
+        'purpose' => 'Kegiatan',
+        'status' => 'pending',
+    ]);
+
+    // Available balance is 0, so approval should fail with error
+    $this->actingAs($teacher)
+        ->put(route('teachers.cash-report.approve', $withdrawal->id))
+        ->assertRedirect(route('teachers.cash-report'))
+        ->assertSessionHas('error');
+
+    expect($withdrawal->fresh()->status)->toBe('pending');
+
+    // Deposit enough money
+    WasteDeposit::create([
+        'classroom_id' => $classroom->id,
+        'waste_type' => 'Botol Plastik',
+        'weight' => 25,
+        'value' => 75000,
+        'points' => 250,
+        'deposit_date' => now(),
+    ]);
+
+    // Now approval succeeds
+    $this->actingAs($teacher)
+        ->put(route('teachers.cash-report.approve', $withdrawal->id))
+        ->assertRedirect(route('teachers.cash-report'))
+        ->assertSessionHas('success');
+
+    expect($withdrawal->fresh()->status)->toBe('approved');
+
+    // Trying to approve again should fail
+    $this->actingAs($teacher)
+        ->put(route('teachers.cash-report.approve', $withdrawal->id))
+        ->assertRedirect(route('teachers.cash-report'))
+        ->assertSessionHas('error');
+});
+
+test('student can choose class on selection page and data is synced to student, teacher, and green rewards', function () {
+    $classroom = Classroom::create([
+        'name' => 'XII TKJ 1',
+        'homeroom_teacher' => 'Charles',
+        'members' => 32,
+        'points' => 500,
+    ]);
+
+    $student = User::create([
+        'name' => 'Michael Robert Yandi',
+        'email' => 'michael@sudican.test',
+        'password' => bcrypt('password123'),
+        'role' => 'student',
+    ]);
+
+    $this->actingAs($student)
+        ->get(route('student.select-class'))
+        ->assertOk()
+        ->assertSee('Selamat Datang Di SudiCan')
+        ->assertSee('Pengurus Kelas Manakah Kamu?');
+
+    $this->actingAs($student)
+        ->post(route('student.select-class.store'), [
+            'class' => '12 TKJ 1',
+            'name' => 'Michael Robert Yandi',
+            'nis' => '654321',
+        ])
+        ->assertRedirect(route('student.dashboard'))
+        ->assertSessionHas('success');
+
+    expect($student->fresh()->classroom_id)->toBe($classroom->id);
+    $studentRecord = Student::where('user_id', $student->id)->first();
+    expect($studentRecord->nis)->toBe('654321')
+        ->and($studentRecord->class)->toBe('XII TKJ 1')
+        ->and($studentRecord->classroom_id)->toBe($classroom->id);
+
+    // Green rewards reflects classroom points (500 pts)
+    $this->actingAs($student)
+        ->get(route('student.greenrewards'))
+        ->assertOk()
+        ->assertViewHas('points', 500)
+        ->assertSee('500')
+        ->assertSee('XII TKJ 1');
+});
+
+test('teacher waste deposit correctly adds points to the selected class and not to other classes', function () {
+    $teacher = User::create([
+        'name' => 'Guru Penilai',
+        'email' => 'guru_penilai@sudican.test',
+        'password' => bcrypt('password123'),
+        'role' => 'teacher',
+    ]);
+
+    $classA = Classroom::create([
+        'name' => 'XII TKJ 1',
+        'homeroom_teacher' => 'Guru A',
+        'members' => 30,
+        'points' => 0,
+    ]);
+
+    $classB = Classroom::create([
+        'name' => 'XII BiD',
+        'homeroom_teacher' => 'Guru B',
+        'members' => 28,
+        'points' => 0,
+    ]);
+
+    WastePrice::create([
+        'name' => 'Botol Plastik',
+        'unit' => 'kg',
+        'price' => 3000,
+    ]);
+
+    // Teacher deposits 5kg (50 pts) for class A (XII TKJ 1) using classroom_id
+    $this->actingAs($teacher)
+        ->post(route('teachers.waste-deposit.store'), [
+            'classroom_id' => $classA->id,
+            'waste_type' => 'Botol Plastik',
+            'weight' => 5,
+        ])
+        ->assertRedirect(route('teachers.waste-deposit'))
+        ->assertSessionHas('success');
+
+    expect($classA->fresh()->points)->toBe(50);
+    expect($classB->fresh()->points)->toBe(0);
+
+    // Teacher deposits 10kg (100 pts) for class B (XII BiD) using class name
+    $this->actingAs($teacher)
+        ->post(route('teachers.waste-deposit.store'), [
+            'class' => $classB->name,
+            'waste_type' => 'Botol Plastik',
+            'weight' => 10,
+        ])
+        ->assertRedirect(route('teachers.waste-deposit'))
+        ->assertSessionHas('success');
+
+    expect($classA->fresh()->points)->toBe(50);
+    expect($classB->fresh()->points)->toBe(100);
 });

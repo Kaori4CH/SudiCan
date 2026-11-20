@@ -21,6 +21,14 @@ class Student extends Model
         'major',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'user_id' => 'integer',
+            'classroom_id' => 'integer',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

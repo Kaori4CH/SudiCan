@@ -19,6 +19,13 @@ class Teacher extends Model
         'phone',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'user_id' => 'integer',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

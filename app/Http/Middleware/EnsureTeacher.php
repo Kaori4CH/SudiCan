@@ -19,7 +19,7 @@ class EnsureTeacher
 
         $user = Auth::user();
 
-        if ($user->role !== 'teacher' && $user->role !== 'admin') {
+        if (! $user->canAccessTeacherArea()) {
             return redirect()->route('student.dashboard')->with('error', 'Akses ditolak. Anda tidak memiliki izin untuk mengakses halaman guru/admin.');
         }
 

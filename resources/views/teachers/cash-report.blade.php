@@ -9,15 +9,17 @@
             <h1 class="text-2xl font-bold text-slate-800">Cash Report — Validasi Penarikan</h1>
             <p class="mt-1 text-sm text-slate-500">Verifikasi dan proses pencairan kas kelas secara fisik</p>
         </div>
-        <span class="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-700">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            Mode Eksekutor
-        </span>
     </div>
 
     @if (session('success'))
         <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ session('error') }}
         </div>
     @endif
 

@@ -49,4 +49,24 @@ class User extends Authenticatable
     {
         return $this->hasOne(Teacher::class);
     }
+
+    public function isTeacher(): bool
+    {
+        return $this->role === 'teacher';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isStudent(): bool
+    {
+        return $this->role === 'student';
+    }
+
+    public function canAccessTeacherArea(): bool
+    {
+        return in_array($this->role, ['teacher', 'admin'], true);
+    }
 }
